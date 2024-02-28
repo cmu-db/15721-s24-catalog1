@@ -1,12 +1,15 @@
 mod database;
 mod dto;
+mod repository;
 
-use crate::database::database::Database;
+// use crate::database::database::Database;
 use dto::namespace_data::NamespaceData;
-use dto::operator_statistics::OperatorStatistics;
-use dto::table_data::TableData;
+// use dto::operator_statistics::OperatorStatistics;
+// use dto::table_data::TableData;
 use serde_json::json;
+use repository::namespace::NamespaceRepository;
 
+/*
 fn main() -> Result<(), std::io::Error> {
     let db = Database::open("rocksdb")?;
 
@@ -85,3 +88,39 @@ fn main() -> Result<(), std::io::Error> {
 
     Ok(())
 }
+*/
+
+fn main() -> Result<(), std::io::Error> {
+    let repo = NamespaceRepository::new("rocksdb")?;
+
+    // Create some data
+    let namespace_data = NamespaceData {
+        name: "my_namespace".to_string(),
+        properties: json!({"key": "value"}),
+    };
+
+    
+    // Insert the data
+    repo.create_namespace(&namespace_data.name, Some(namespace_data.properties.clone()))?;
+
+    // List all namespaces
+    let namespaces = repo.list_all_namespaces()?;
+    println!("Namespaces: {:?}", namespaces);
+
+    // Load the metadata properties for a namespace
+    let namespace_data = repo.load_namespace(&namespace_data.name)?;
+    println!("NamespaceData: {:?}", namespace_data);
+
+    if let Some(namespace_data) = namespace_data {
+        // Check if a namespace exists
+        let exists = repo.namespace_exists(&namespace_data.name)?;
+        println!("Namespace exists: {}", exists);
+
+        // Delete a namespace
+        repo.delete_namespace(&namespace_data.name)?;
+    }
+    
+
+    Ok(())
+}
+
