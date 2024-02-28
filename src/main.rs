@@ -2,10 +2,10 @@ mod database;
 mod dto;
 
 use crate::database::database::Database;
-use serde_json::json;
 use dto::namespace_data::NamespaceData;
 use dto::operator_statistics::OperatorStatistics;
 use dto::table_data::TableData;
+use serde_json::json;
 
 fn main() -> Result<(), std::io::Error> {
     let db = Database::open("rocksdb")?;
@@ -27,7 +27,7 @@ fn main() -> Result<(), std::io::Error> {
         value_range: (1, 100),
         is_strong_key: true,
         is_weak_key: false,
-        primary_key_col_name: "id".to_string()
+        primary_key_col_name: "id".to_string(),
     };
 
     let operator_statistics = OperatorStatistics {
@@ -38,12 +38,17 @@ fn main() -> Result<(), std::io::Error> {
     // Insert the data
     db.insert("NamespaceData", &namespace_data.name, &namespace_data)?;
     db.insert("TableData", &table_data.name, &table_data)?;
-    db.insert("OperatorStatistics", &operator_statistics.operator_string, &operator_statistics)?;
+    db.insert(
+        "OperatorStatistics",
+        &operator_statistics.operator_string,
+        &operator_statistics,
+    )?;
 
     // Get the data
     let namespace_data: Option<NamespaceData> = db.get("NamespaceData", &namespace_data.name)?;
     let table_data: Option<TableData> = db.get("TableData", &table_data.name)?;
-    let operator_statistics: Option<OperatorStatistics> = db.get("OperatorStatistics", &operator_statistics.operator_string)?;
+    let operator_statistics: Option<OperatorStatistics> =
+        db.get("OperatorStatistics", &operator_statistics.operator_string)?;
 
     println!("NamespaceData: {:?}", namespace_data);
     println!("TableData: {:?}", table_data);
@@ -54,10 +59,15 @@ fn main() -> Result<(), std::io::Error> {
         name: "my_namespace".to_string(),
         properties: json!({"key": "new_value"}),
     };
-    db.update("NamespaceData", &updated_namespace_data.name, &updated_namespace_data)?;
-    
+    db.update(
+        "NamespaceData",
+        &updated_namespace_data.name,
+        &updated_namespace_data,
+    )?;
+
     // Get the updated data
-    let namespace_data: Option<NamespaceData> = db.get("NamespaceData", &updated_namespace_data.name)?;
+    let namespace_data: Option<NamespaceData> =
+        db.get("NamespaceData", &updated_namespace_data.name)?;
     println!("NamespaceData: {:?}", namespace_data);
 
     // Delete the data
