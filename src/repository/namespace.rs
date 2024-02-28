@@ -1,7 +1,6 @@
-
 use crate::database::database::Database;
 use crate::dto::namespace_data::NamespaceData;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::io;
 use std::sync::Arc;
 
@@ -17,7 +16,9 @@ impl NamespaceRepository {
     pub fn list_all_namespaces(&self) -> io::Result<Vec<String>> {
         // This function depends on the specific implementation of MyDB
         // and whether it supports listing all keys in a column family.
-        self.db.list_all_keys("NamespaceData").map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
+        self.db
+            .list_all_keys("NamespaceData")
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
     }
 
     pub fn create_namespace(&self, name: &str, properties: Option<Value>) -> io::Result<()> {
@@ -33,7 +34,9 @@ impl NamespaceRepository {
     }
 
     pub fn namespace_exists(&self, name: &str) -> io::Result<bool> {
-        self.db.get::<NamespaceData>("NamespaceData", name).map(|data| data.is_some())
+        self.db
+            .get::<NamespaceData>("NamespaceData", name)
+            .map(|data| data.is_some())
     }
 
     pub fn delete_namespace(&self, name: &str) -> io::Result<()> {
@@ -45,7 +48,10 @@ impl NamespaceRepository {
             namespace_data.properties = properties;
             self.db.update("NamespaceData", name, &namespace_data)
         } else {
-            Err(io::Error::new(io::ErrorKind::NotFound, "Namespace not found"))
+            Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Namespace not found",
+            ))
         }
     }
 }

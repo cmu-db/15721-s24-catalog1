@@ -6,8 +6,8 @@ use crate::database::database::Database;
 // use dto::namespace_data::NamespaceData;
 // use dto::operator_statistics::OperatorStatistics;
 // use dto::table_data::TableData;
-use serde_json::json;
 use repository::namespace::NamespaceRepository;
+use serde_json::json;
 use std::sync::Arc;
 
 fn main() -> std::io::Result<()> {
