@@ -1,7 +1,7 @@
-mod db;
+mod database;
 mod dto;
 
-use crate::db::db::Database;
+use crate::database::database::Database;
 use serde_json::json;
 use dto::namespace_data::NamespaceData;
 use dto::operator_statistics::OperatorStatistics;
