@@ -124,7 +124,4 @@ impl Database {
         Ok(())
     }
 
-    pub fn close(self) {
-        drop(self);
-    }
 }

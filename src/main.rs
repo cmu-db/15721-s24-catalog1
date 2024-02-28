@@ -3,9 +3,6 @@ mod dto;
 mod repository;
 
 use crate::database::database::Database;
-// use dto::namespace_data::NamespaceData;
-// use dto::operator_statistics::OperatorStatistics;
-// use dto::table_data::TableData;
 use repository::namespace::NamespaceRepository;
 use serde_json::json;
 use std::sync::Arc;
