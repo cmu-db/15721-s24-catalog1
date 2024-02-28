@@ -1,4 +1,5 @@
 mod dto;
+mod db;
 
 use dto::namespace_data::NamespaceData;
 use dto::operator_statistics::OperatorStatistics;
