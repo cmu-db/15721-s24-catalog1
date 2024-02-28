@@ -1,4 +1,5 @@
-use rocksdb::{ColumnFamilyDescriptor, Error, Options, DB};
+use rocksdb::{ColumnFamilyDescriptor, Options, DB};
+use std::io::{self, ErrorKind};
 use std::path::Path;
 
 pub struct Database {
@@ -6,7 +7,7 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
+    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, std::io::Error> {
         let mut opts = Options::default();
         opts.create_if_missing(true);
         opts.create_missing_column_families(true);
@@ -22,8 +23,58 @@ impl Database {
 
         let cfs_vec = vec![namespace_cf, table_cf, operator_cf];
 
-        let db = DB::open_cf_descriptors(&opts, path, cfs_vec)?;
+        let db = DB::open_cf_descriptors(&opts, path, cfs_vec)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
 
         Ok(Self { db })
+    }
+
+    pub fn insert(&self, cf: &str, key: &[u8], value: &[u8]) -> io::Result<()> {
+        let cf_handle = self.db.cf_handle(cf).ok_or_else(|| {
+            io::Error::new(
+                ErrorKind::NotFound,
+                format!("Column family {} not found", cf),
+            )
+        })?;
+        self.db
+            .put_cf(cf_handle, key, value)
+            .map_err(|e| io::Error::new(ErrorKind::Other, e))?;
+        Ok(())
+    }
+
+    pub fn get(&self, cf: &str, key: &[u8]) -> io::Result<Option<Vec<u8>>> {
+        let cf_handle = self.db.cf_handle(cf).ok_or_else(|| {
+            io::Error::new(
+                ErrorKind::NotFound,
+                format!("Column family {} not found", cf),
+            )
+        })?;
+        let value = self
+            .db
+            .get_cf(cf_handle, key)
+            .map_err(|e| io::Error::new(ErrorKind::Other, e))?;
+        Ok(value)
+    }
+
+    pub fn delete(&self, cf: &str, key: &[u8]) -> io::Result<()> {
+        let cf_handle = self.db.cf_handle(cf).ok_or_else(|| {
+            io::Error::new(
+                ErrorKind::NotFound,
+                format!("Column family {} not found", cf),
+            )
+        })?;
+        self.db
+            .delete_cf(cf_handle, key)
+            .map_err(|e| io::Error::new(ErrorKind::Other, e))?;
+        Ok(())
+    }
+    pub fn update(&self, cf: &str, key: &[u8], value: &[u8]) -> io::Result<()> {
+        let cf_handle = self.db.cf_handle(cf).ok_or_else(|| io::Error::new(ErrorKind::NotFound, format!("Column family {} not found", cf)))?;
+        self.db.put_cf(cf_handle, key, value).map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
+        Ok(())
+    }
+    
+    pub fn close(self) {
+        drop(self);
     }
 }
