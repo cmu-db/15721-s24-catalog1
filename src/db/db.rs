@@ -1,4 +1,4 @@
-use rocksdb::{Options, DB, ColumnFamilyDescriptor, Error};
+use rocksdb::{ColumnFamilyDescriptor, Error, Options, DB};
 use std::path::Path;
 
 pub struct Database {

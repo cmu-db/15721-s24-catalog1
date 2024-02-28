@@ -1,10 +1,10 @@
-mod dto;
 mod db;
+mod dto;
 
+use crate::db::db::Database;
 use dto::namespace_data::NamespaceData;
 use dto::operator_statistics::OperatorStatistics;
 use dto::table_data::TableData;
-use crate::db::db::Database;
 
 fn main() {
     {
@@ -39,13 +39,13 @@ fn main() {
         println!("Operator Stats: {:?}", operator_stats);
     }
 
-        match Database::new("rocksdb") {
-            Ok(db) => {
-                // Use the database
-                println!("hello, db opened");
-            }
-            Err(e) => {
-                eprintln!("Failed to open database: {}", e);
-            }
+    match Database::new("rocksdb") {
+        Ok(db) => {
+            // Use the database
+            println!("hello, db opened");
         }
+        Err(e) => {
+            eprintln!("Failed to open database: {}", e);
+        }
+    }
 }
