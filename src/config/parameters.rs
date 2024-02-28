@@ -6,6 +6,6 @@ pub fn init() {
 
 pub fn get(parameter: &str) -> String {
     let env_parameter = std::env::var(parameter)
-        .expect(&format!("{} is not defined in the environment.", parameter));
-    return env_parameter;
+        .expect(&format!("{} is not defined in the environment", parameter));
+    env_parameter
 }
