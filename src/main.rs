@@ -1,8 +1,5 @@
-// file: src/main.rs
+mod data_model; 
 
-mod data_model; // Import the data model module
-
-// Bring the structs into scope
 use data_model::namespace_data::NamespaceData;
 use data_model::table_data::TableData;
 use data_model::operator_statistics::OperatorStatistics;
