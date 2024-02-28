@@ -2,9 +2,18 @@ use rocksdb::{ColumnFamilyDescriptor, IteratorMode, Options, DB};
 use serde::{Deserialize, Serialize};
 use std::io::{self, ErrorKind};
 use std::path::Path;
+use std::sync::Arc;
 
 pub struct Database {
-    db: DB,
+    db: Arc<DB>,
+}
+
+impl Clone for Database {
+    fn clone(&self) -> Self {
+        Self {
+            db: Arc::clone(&self.db),
+        }
+    }
 }
 
 impl Database {
@@ -27,7 +36,7 @@ impl Database {
         let db = DB::open_cf_descriptors(&opts, path, cfs_vec)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
 
-        Ok(Self { db })
+        Ok(Self { db : db.into() })
     }
 
     pub fn list_all_keys(&self, cf: &str) -> Result<Vec<String>, io::Error> {

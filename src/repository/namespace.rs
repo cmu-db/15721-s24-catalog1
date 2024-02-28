@@ -3,15 +3,15 @@ use crate::database::database::Database;
 use crate::dto::namespace_data::NamespaceData;
 use serde_json::{Value, json};
 use std::io;
+use std::sync::Arc;
 
 pub struct NamespaceRepository {
-    db: Database,
+    db: Arc<Database>,
 }
 
 impl NamespaceRepository {
-    pub fn new(db_path: &str) -> io::Result<Self> {
-        let db = Database::open(db_path)?;
-        Ok(Self { db })
+    pub fn new(db: Arc<Database>) -> Self {
+        Self { db }
     }
 
     pub fn list_all_namespaces(&self) -> io::Result<Vec<String>> {
