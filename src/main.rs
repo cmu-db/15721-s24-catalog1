@@ -49,6 +49,17 @@ fn main() -> Result<(), std::io::Error> {
     println!("TableData: {:?}", table_data);
     println!("OperatorStatistics: {:?}", operator_statistics);
 
+    // Update the data
+    let updated_namespace_data = NamespaceData {
+        name: "my_namespace".to_string(),
+        properties: json!({"key": "new_value"}),
+    };
+    db.update("NamespaceData", &updated_namespace_data.name, &updated_namespace_data)?;
+    
+    // Get the updated data
+    let namespace_data: Option<NamespaceData> = db.get("NamespaceData", &updated_namespace_data.name)?;
+    println!("NamespaceData: {:?}", namespace_data);
+
     // Delete the data
     if let Some(namespace_data) = namespace_data {
         db.delete("NamespaceData", &namespace_data.name)?;

@@ -1,6 +1,5 @@
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use serde::{Serialize, Deserialize};
-use serde_json::{Value, json};
 use std::io::{self, ErrorKind};
 use std::path::Path;
 
