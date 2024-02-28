@@ -19,7 +19,7 @@ fn main() -> io::Result<()> {
     println!("NamespaceData: {:?}", namespace_data);
     println!("TableData: {:?}", table_data);
     println!("OperatorStatistics: {:?}", operator_statistics);
-    
+
     db.update("NamespaceData", b"my_key", b"new_value")?;
 
     // Get the updated data

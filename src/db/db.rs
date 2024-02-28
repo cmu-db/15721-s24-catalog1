@@ -69,11 +69,18 @@ impl Database {
         Ok(())
     }
     pub fn update(&self, cf: &str, key: &[u8], value: &[u8]) -> io::Result<()> {
-        let cf_handle = self.db.cf_handle(cf).ok_or_else(|| io::Error::new(ErrorKind::NotFound, format!("Column family {} not found", cf)))?;
-        self.db.put_cf(cf_handle, key, value).map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
+        let cf_handle = self.db.cf_handle(cf).ok_or_else(|| {
+            io::Error::new(
+                ErrorKind::NotFound,
+                format!("Column family {} not found", cf),
+            )
+        })?;
+        self.db
+            .put_cf(cf_handle, key, value)
+            .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
         Ok(())
     }
-    
+
     pub fn close(self) {
         drop(self);
     }
