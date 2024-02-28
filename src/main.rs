@@ -1,8 +1,8 @@
-mod data_model;
+mod dto;
 
-use data_model::namespace_data::NamespaceData;
-use data_model::operator_statistics::OperatorStatistics;
-use data_model::table_data::TableData;
+use dto::namespace_data::NamespaceData;
+use dto::operator_statistics::OperatorStatistics;
+use dto::table_data::TableData;
 
 fn main() {
     // Create instances of the structs
