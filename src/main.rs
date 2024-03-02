@@ -2,6 +2,7 @@ mod routes;
 mod dto;
 mod handlers;
 mod config;
+mod tests;
 
 use crate::config::parameters;
 

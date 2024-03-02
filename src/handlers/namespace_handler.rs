@@ -8,8 +8,7 @@ use axum::{
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Namespace {
-    // Define your namespace properties here
-    // Example: pub namespace_name: String,
+    
 }
 
 
@@ -59,7 +58,7 @@ pub async fn drop_namespace(Path(namespace): Path<String>) -> impl IntoResponse 
     // Logic to drop a namespace from the catalog
     // Ensure the namespace is empty before dropping
     // Return HTTP status code 204 to indicate successful deletion
-    StatusCode::OK
+    StatusCode::NO_CONTENT
 }
 
 pub async fn set_namespace_properties(Path(namespace): Path<String>) -> Json<NamespaceProperties> {
