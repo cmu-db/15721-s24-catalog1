@@ -1,6 +1,6 @@
+use crate::dto::column_data::ColumnData;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::dto::column_data::ColumnData;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TableData {
