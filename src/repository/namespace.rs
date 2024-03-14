@@ -14,8 +14,6 @@ impl NamespaceRepository {
     }
 
     pub fn list_all_namespaces(&self) -> io::Result<Vec<String>> {
-        // This function depends on the specific implementation of MyDB
-        // and whether it supports listing all keys in a column family.
         self.db
             .list_all_keys("NamespaceData")
             .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
@@ -57,7 +55,5 @@ impl NamespaceRepository {
 }
 
 fn current_time() -> String {
-    // This function returns the current time as a string.
-    // It's a placeholder and should be replaced with your actual implementation.
-    "current_time".to_string()
+     "current_time".to_string()
 }
