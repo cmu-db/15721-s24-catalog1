@@ -1,3 +1,3 @@
 pub mod namespace;
-pub mod table;
 pub mod root;
+pub mod table;
