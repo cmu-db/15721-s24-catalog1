@@ -4,17 +4,16 @@ use axum::{
     response::IntoResponse,
 };
 
-
-
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct Namespace {
-    
-}
-
+pub struct Namespace {}
 
 pub async fn list_namespaces() -> Json<Vec<String>> {
     // Logic to list namespaces
-    let namespaces: Vec<String> = vec!["accounting".to_string(), "tax".to_string(), "paid".to_string()];
+    let namespaces: Vec<String> = vec![
+        "accounting".to_string(),
+        "tax".to_string(),
+        "paid".to_string(),
+    ];
     Json(namespaces)
 }
 
@@ -69,6 +68,6 @@ pub async fn set_namespace_properties(Path(namespace): Path<String>) -> Json<Nam
     let prop = NamespaceProperties {
         data: "namespace properties".to_string(),
     };
-    
+
     Json(prop)
 }

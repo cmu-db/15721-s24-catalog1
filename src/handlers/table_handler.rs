@@ -4,12 +4,14 @@ use axum::{
     response::IntoResponse,
 };
 
-
 pub async fn list_tables(Path(namespace): Path<String>) -> Json<Vec<String>> {
     // Dummy response for demonstration
-    let tables: Vec<String> = vec!["accounting".to_string(), "tax".to_string(), "paid".to_string()];
+    let tables: Vec<String> = vec![
+        "accounting".to_string(),
+        "tax".to_string(),
+        "paid".to_string(),
+    ];
     Json(tables)
-    
 }
 
 pub async fn create_table(Path(namespace): Path<String>) -> impl IntoResponse {
@@ -34,13 +36,11 @@ pub async fn delete_table(Path((namespace, table)): Path<(String, String)>) -> i
 
 pub async fn table_exists(Path((namespace, table)): Path<(String, String)>) -> impl IntoResponse {
     // Logic to check if a table exists within a given namespace
-    StatusCode::OK 
+    StatusCode::OK
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct MetricsReport {
-    
-}
+pub struct MetricsReport {}
 
 // Handler functions
 pub async fn rename_table(table_rename: String) -> impl IntoResponse {
@@ -53,7 +53,12 @@ pub async fn report_metrics(Path((namespace, table)): Path<(String, String)>) ->
     Json(table)
 }
 
-pub async fn find_tuple_location(Path((namespace, table, tuple_id)): Path<(String, String, String)>) -> impl IntoResponse {
+pub async fn find_tuple_location(
+    Path((namespace, table, tuple_id)): Path<(String, String, String)>,
+) -> impl IntoResponse {
     // Logic to return the physical file location for a given tuple ID
-    format!("Physical file location for tuple ID {} of table {} in namespace {}.", tuple_id, table, namespace)
+    format!(
+        "Physical file location for tuple ID {} of table {} in namespace {}.",
+        tuple_id, table, namespace
+    )
 }
