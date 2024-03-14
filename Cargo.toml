@@ -6,6 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+axum = {version = "0.7.4"}
 serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["full"] }
 serde_json = "1.0"
+tower-http = { version = "0.4.0", features = ["full"] }
+dotenv = "0.15.0"
 rocksdb = "0.22.0"
+
+pretty_assertions = "0.7"
+select = "0.5"
