@@ -1,3 +1,0 @@
-[submodule "rust-rocksdb"]
-        url = https://github.com/rust-rocksdb/rust-rocksdb.git
-        active = true
