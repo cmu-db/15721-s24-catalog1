@@ -1,10 +1,19 @@
-use rocksdb::{ColumnFamilyDescriptor, Options, DB};
+use rocksdb::{ColumnFamilyDescriptor, IteratorMode, Options, DB};
 use serde::{Deserialize, Serialize};
 use std::io::{self, ErrorKind};
 use std::path::Path;
+use std::sync::Arc;
 
 pub struct Database {
-    db: DB,
+    db: Arc<DB>,
+}
+
+impl Clone for Database {
+    fn clone(&self) -> Self {
+        Self {
+            db: Arc::clone(&self.db),
+        }
+    }
 }
 
 impl Database {
@@ -27,8 +36,27 @@ impl Database {
         let db = DB::open_cf_descriptors(&opts, path, cfs_vec)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
 
-        Ok(Self { db })
+        Ok(Self { db: db.into() })
     }
+
+    pub fn list_all_keys(&self, cf: &str) -> Result<Vec<String>, io::Error> {
+        let cf_handle = self.db.cf_handle(cf).ok_or_else(|| {
+            io::Error::new(
+                ErrorKind::NotFound,
+                format!("Column family {} not found", cf),
+            )
+        })?;
+        let mut keys = Vec::new();
+        let iter = self.db.iterator_cf(cf_handle, IteratorMode::Start);
+        for item in iter {
+            let (key, _) = item.map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
+            let key_str = String::from_utf8(key.to_vec())
+                .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
+            keys.push(key_str);
+        }
+        Ok(keys)
+    }
+
     pub fn insert<V: Serialize>(&self, cf: &str, key: &str, value: &V) -> Result<(), io::Error> {
         let cf_handle = self.db.cf_handle(cf).ok_or_else(|| {
             io::Error::new(
@@ -96,7 +124,4 @@ impl Database {
         Ok(())
     }
 
-    pub fn close(self) {
-        drop(self);
-    }
 }
