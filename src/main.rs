@@ -13,5 +13,6 @@ async fn main() {
 
     let listener = tokio::net::TcpListener::bind(host).await.unwrap();
     let app = routes::root::routes();
+    println!("⚡ Server starting on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
 }
