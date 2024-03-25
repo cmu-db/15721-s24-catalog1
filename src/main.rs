@@ -3,6 +3,8 @@ mod dto;
 mod handlers;
 mod routes;
 mod tests;
+mod repository;
+mod database;
 
 use crate::config::parameters;
 
