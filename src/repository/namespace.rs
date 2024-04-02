@@ -19,12 +19,13 @@ impl NamespaceRepository {
             .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
     }
 
-    pub fn create_namespace(&self, name: &str, properties: Option<Value>) -> io::Result<()> {
+    pub fn create_namespace(&self, name: String, properties: Option<Value>) -> io::Result<()> {
+        let name_str : &str = name.as_str();
         let namespace_data = NamespaceData {
-            name: name.to_string(),
+            name: name_str.to_string(),
             properties: properties.unwrap_or_else(|| json!({"last_modified_time": current_time()})),
         };
-        self.db.insert("NamespaceData", name, &namespace_data)
+        self.db.insert("NamespaceData", name_str, &namespace_data)
     }
 
     pub fn load_namespace(&self, name: &str) -> io::Result<Option<NamespaceData>> {

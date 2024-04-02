@@ -3,23 +3,28 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
+use crate::dto::namespace_data::NamespaceData;
+use serde_json::json;
+use crate::database::database::Database;
+use crate::repository::namespace::NamespaceRepository;
+use std::sync::Arc;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct Namespace {}
 
 pub async fn list_namespaces() -> Json<Vec<String>> {
     // Logic to list namespaces
-    let namespaces: Vec<String> = vec![
-        "accounting".to_string(),
-        "tax".to_string(),
-        "paid".to_string(),
-    ];
-    Json(namespaces)
+    let db_path = "rocksdb";
+    let db = Arc::new(Database::open(db_path).unwrap());
+    let namespace_repo = NamespaceRepository::new(db.clone());
+    let namespaces = namespace_repo.list_all_namespaces();
+    Json(namespaces.unwrap())
 }
 
-pub async fn create_namespace(new_namespace: Json<Namespace>) -> Json<Namespace> {
+pub async fn create_namespace(new_namespace: Json<NamespaceData>) -> Json<NamespaceData> {
     // Logic to create a new namespace
-
+    let db_path = "rocksdb";
+    let db = Arc::new(Database::open(db_path).unwrap());
+    let namespace_repo = NamespaceRepository::new(db.clone());
+    namespace_repo.create_namespace(new_namespace.get_name(), Some(new_namespace.get_properties())).unwrap();
     // Logic to persist the namespace and add properties
     new_namespace
 }

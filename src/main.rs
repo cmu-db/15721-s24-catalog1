@@ -6,10 +6,10 @@ mod tests;
 mod repository;
 mod database;
 
-use crate::config::parameters;
+use config::parameters;
 
 #[tokio::main]
-async fn main() {
+async fn main(){ 
     parameters::init();
     let host = format!("0.0.0.0:{}", parameters::get("PORT"));
 
