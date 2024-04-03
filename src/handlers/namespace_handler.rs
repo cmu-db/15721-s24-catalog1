@@ -68,19 +68,19 @@ pub async fn drop_namespace(Path(namespace): Path<String>) -> impl IntoResponse 
     StatusCode::NO_CONTENT
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct NamespaceProperties {
-    data: String,
-}
-
-pub async fn set_namespace_properties(Path(namespace): Path<String>) -> Json<NamespaceProperties> {
+pub async fn set_namespace_properties(
+    Path(namespace): Path<String>,
+    properties: Json<Value>,
+) -> impl IntoResponse {
     // Logic to set and/or remove properties on a namespace
     // Deserialize request body and process properties
     // Return HTTP status code 200 to indicate success
+    let db_path = "rocksdb";
 
-    let prop = NamespaceProperties {
-        data: "namespace properties".to_string(),
-    };
-
-    Json(prop)
+    let db = Arc::new(Database::open(db_path).unwrap());
+    let namespace_repo = NamespaceRepository::new(db.clone());
+    match namespace_repo.set_namespace_properties(namespace.as_str(), properties.0) {
+        Ok(_) => StatusCode::OK,
+        Err(_) => StatusCode::NOT_FOUND,
+    }
 }
