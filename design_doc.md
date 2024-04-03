@@ -160,25 +160,3 @@ Performance tuning is crucial for the efficiency and speed of our catalog servic
 [1] https://www.snowflake.com/blog/how-foundationdb-powers-snowflake-metadata-forward/
 [2] https://15721.courses.cs.cmu.edu/spring2024/papers/18-databricks/p92-jain.pdf
 [3] https://github.com/programatik29/rust-web-benchmarks/blob/master/result/hello-world.md
-
-## Support for Parallelism
-
-Our catalog service is designed to support parallelism to enhance performance. This is achieved through the following ways:
-
-1. **Concurrency Control in RocksDB**: RocksDB, our chosen database, supports concurrent reads and writes. This allows multiple threads to read and write to the database simultaneously, improving the throughput of our service.
-
-2. **Asynchronous API**: The REST API exposed by our Rust application is asynchronous, meaning it can handle multiple requests at the same time without blocking. This is particularly useful for operations that are I/O-bound, such as reading from or writing to the database.
-
-3. **Thread Pool**: We plan to use a thread pool for handling requests. This allows us to limit the number of threads used by our application, preventing thread thrashing and improving performance.
-
-## Performance Tuning Plan
-
-Performance tuning is crucial for the efficiency and speed of our catalog service. Here's our plan:
-
-1. **RocksDB Tuning**: We will tune RocksDB configurations based on our workload. For example, we can adjust the block cache size, write buffer size, and compaction style to optimize for read-heavy or write-heavy workloads. More details can be found in the [RocksDB Tuning Guide](https://github.com/facebook/rocksdb/wiki/RocksDB-Tuning-Guide).
-
-2. **API Optimization**: We will monitor the performance of our API endpoints and optimize the slow ones. This will involve optimizing the database access methods and refactoring the code.
-
-3. **Load Testing**: We will conduct load testing to understand how our service performs under heavy load. This will help us identify bottlenecks and areas for improvement.
-
-4. **Monitoring and Metrics**: We will add monitoring and metrics to our service to track performance over time. This will help us identify performance regressions and understand the impact of our tuning efforts.
