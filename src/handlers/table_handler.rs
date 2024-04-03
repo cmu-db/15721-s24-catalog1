@@ -12,7 +12,7 @@ const DB_PATH: &str = "rocksdb";
 
 pub async fn list_tables(Path(namespace): Path<String>) -> Json<Vec<String>> {
     // Logic to get all tables in the namespace
-    let database = Database::open("DB_PATH").unwrap();
+    let database = Database::open(DB_PATH).unwrap();
     let repo = TableRepository::new(database);
     Json(repo.list_all_tables(&namespace).unwrap().unwrap())
 }
