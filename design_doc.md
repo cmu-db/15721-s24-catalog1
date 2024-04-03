@@ -112,10 +112,14 @@ Currently, we plan to conduct regression tests on
 
 1. Concurrency and parallelism to ensure data integrity
 2. Correctness of all the APIs in API spec documentation.
+3. Failure Scenarios: Test the behavior and performance under failure scenarios, such as network errors, server failures, or other exceptional conditions.
 
 ### Performance testing
+1. Concurrency Workloads: Test the performance under concurrent access by simulating multiple clients performing various operations simultaneously (e.g., multiple clients creating tables, querying metadata, committing snapshots, etc.).
+2. Large Schemas and Datasets: Evaluate the performance with tables having a large number of columns (e.g., hundreds or thousands of columns) and large datasets with many partitions or snapshots.
+3. Bulk Operations: Test the performance of bulk operations like importing or exporting table metadata, snapshots, or partitions.
+4. Mixed Workloads: Combine different types of operations in a single workload to simulate a more realistic scenario where various operations are performed concurrently.
 
-We plan to run the TPC-DS benchmark against the Iceberg API. Since we have a similar API as the Iceberg catalog, we can replace the Iceberg catalog with our service and run benchmark tests for comparison and performance benchmarking.
 
 ## Trade-offs and Potential Problems
 
@@ -125,19 +129,56 @@ Organizing the namespaces and tables as prefixes in the keys for the store may c
 Database
 We chose RocksDB to store metadata, whereas Iceberg Catalog has its own metadata layer that includes metadata files, manifest lists, and manifests. Using RocksDB could be more straightforward to implement compared to building everything from scratch. The components in Iceberg Catalog are likely to be optimized for Iceberg Catalog, and they could outperform RocksDB, which is not dedicated to catalog service.
 
-### Milestones
+## Support for Parallelism
+Our catalog service is designed to support parallelism to enhance performance. This is achieved through the following ways:
+1. **Concurrency Control in RocksDB**: RocksDB, our chosen database, supports concurrent reads and writes. This allows multiple threads to read and write to the database simultaneously, improving the throughput of our service.
+
+2. **Asynchronous API**: The REST API exposed by our Rust application is asynchronous, meaning it can handle multiple requests at the same time without blocking. This is particularly useful for operations that are I/O-bound, such as reading from or writing to the database.
+
+3. **Thread Pool**: We plan to use a thread pool for handling requests. This allows us to limit the number of threads used by our application, preventing thread thrashing and improving performance.
+
+## Performance Tuning Plan
+Performance tuning is crucial for the efficiency and speed of our catalog service. Here's our plan:
+
+1. **RocksDB Tuning**: We will tune RocksDB configurations based on our workload. For example, we can adjust the block cache size, write buffer size, and compaction style to optimize for read-heavy or write-heavy workloads. More details can be found in the [RocksDB Tuning Guide](https://github.com/facebook/rocksdb/wiki/RocksDB-Tuning-Guide).
+
+2. **API Optimization**: We will monitor the performance of our API endpoints and optimize the slow ones. This will involve optimizing the database access methods and refactoring the code.
+
+3. **Load Testing**: We will conduct load testing to understand how our service performs under heavy load. This will help us identify bottlenecks and areas for improvement.
+
+4. **Monitoring and Metrics**: We will add monitoring and metrics to our service to track performance over time. This will help us identify performance regressions and understand the impact of our tuning efforts.
+
+## Milestones
 
 - 75%: Basic API support
 - 100%: Support for parallelism and performance tuning
-- 125%: Performance comparable to or better than Iceberg Catalog and MVCC
+- 125%: Performance testing against Iceberg Catalog
 
-### Task distribution
-
-- Simran: Data access and organization
-- Aditya: Rest API implementation
 
 ### References
 
 [1] https://www.snowflake.com/blog/how-foundationdb-powers-snowflake-metadata-forward/
 [2] https://15721.courses.cs.cmu.edu/spring2024/papers/18-databricks/p92-jain.pdf
 [3] https://github.com/programatik29/rust-web-benchmarks/blob/master/result/hello-world.md
+
+## Support for Parallelism
+
+Our catalog service is designed to support parallelism to enhance performance. This is achieved through the following ways:
+
+1. **Concurrency Control in RocksDB**: RocksDB, our chosen database, supports concurrent reads and writes. This allows multiple threads to read and write to the database simultaneously, improving the throughput of our service.
+
+2. **Asynchronous API**: The REST API exposed by our Rust application is asynchronous, meaning it can handle multiple requests at the same time without blocking. This is particularly useful for operations that are I/O-bound, such as reading from or writing to the database.
+
+3. **Thread Pool**: We plan to use a thread pool for handling requests. This allows us to limit the number of threads used by our application, preventing thread thrashing and improving performance.
+
+## Performance Tuning Plan
+
+Performance tuning is crucial for the efficiency and speed of our catalog service. Here's our plan:
+
+1. **RocksDB Tuning**: We will tune RocksDB configurations based on our workload. For example, we can adjust the block cache size, write buffer size, and compaction style to optimize for read-heavy or write-heavy workloads. More details can be found in the [RocksDB Tuning Guide](https://github.com/facebook/rocksdb/wiki/RocksDB-Tuning-Guide).
+
+2. **API Optimization**: We will monitor the performance of our API endpoints and optimize the slow ones. This will involve optimizing the database access methods and refactoring the code.
+
+3. **Load Testing**: We will conduct load testing to understand how our service performs under heavy load. This will help us identify bottlenecks and areas for improvement.
+
+4. **Monitoring and Metrics**: We will add monitoring and metrics to our service to track performance over time. This will help us identify performance regressions and understand the impact of our tuning efforts.
