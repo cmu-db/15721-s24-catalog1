@@ -20,7 +20,7 @@ impl NamespaceRepository {
     }
 
     pub fn create_namespace(&self, name: String, properties: Option<Value>) -> io::Result<()> {
-        let name_str : &str = name.as_str();
+        let name_str: &str = name.as_str();
         let namespace_data = NamespaceData {
             name: name_str.to_string(),
             properties: properties.unwrap_or_else(|| json!({"last_modified_time": current_time()})),
@@ -56,5 +56,5 @@ impl NamespaceRepository {
 }
 
 fn current_time() -> String {
-     "current_time".to_string()
+    "current_time".to_string()
 }

@@ -123,5 +123,4 @@ impl Database {
             .map_err(|e| io::Error::new(ErrorKind::Other, e))?;
         Ok(())
     }
-
 }

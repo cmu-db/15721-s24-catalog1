@@ -7,8 +7,8 @@ pub struct NamespaceData {
     pub properties: Value,
 }
 
-impl NamespaceData{
-    pub fn get_name(&self) -> String{
+impl NamespaceData {
+    pub fn get_name(&self) -> String {
         self.name.clone()
     }
 

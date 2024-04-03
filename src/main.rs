@@ -1,15 +1,15 @@
 mod config;
+mod database;
 mod dto;
 mod handlers;
+mod repository;
 mod routes;
 mod tests;
-mod repository;
-mod database;
 
 use config::parameters;
 
 #[tokio::main]
-async fn main(){ 
+async fn main() {
     parameters::init();
     let host = format!("0.0.0.0:{}", parameters::get("PORT"));
 
