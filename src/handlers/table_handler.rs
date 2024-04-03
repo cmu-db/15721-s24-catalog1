@@ -62,13 +62,11 @@ pub async fn table_exists(Path((namespace, table)): Path<(String, String)>) -> i
     // Logic to check if a table exists within a given namespace
     let database = Database::open(DB_PATH).unwrap();
     let repo = TableRepository::new(database);
-    if repo
+    match repo
         .table_exists(namespace.as_str(), table.as_str())
-        .unwrap()
     {
-        StatusCode::FOUND
-    } else {
-        StatusCode::NOT_FOUND
+        Ok(_) => StatusCode::FOUND,
+        Err(_)=>StatusCode::NOT_FOUND
     }
 }
 

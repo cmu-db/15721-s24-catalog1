@@ -20,7 +20,7 @@ impl TableRepository {
 
     pub fn create_table(&self, namespace: &str, table: &TableData) -> Result<(), Error> {
         self.database.insert("TableData", &table.name, table)?;
-        let mut tables = self.list_all_tables(namespace).unwrap().unwrap();
+        let mut tables = self.list_all_tables(namespace).unwrap().unwrap_or_else(||vec![]);
         tables.push(table.name.clone());
         self.database
             .insert("TableNamespaceMap", namespace, &tables)
