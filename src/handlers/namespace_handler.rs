@@ -6,7 +6,7 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use serde_json::json;
+use serde_json::Value;
 use std::sync::Arc;
 
 pub async fn list_namespaces() -> Json<Vec<String>> {
@@ -31,18 +31,6 @@ pub async fn create_namespace(new_namespace: Json<NamespaceData>) -> Json<Namesp
         .unwrap();
     // Logic to persist the namespace and add properties
     new_namespace
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct NamespaceMetadata {
-    // Define your namespace metadata properties here
-    // Example: pub metadata_property: String,
-    data: String,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct NamespaceProperties {
-    data: String,
 }
 
 pub async fn load_namespace_metadata(Path(namespace): Path<String>) -> Json<NamespaceData> {
@@ -72,8 +60,17 @@ pub async fn namespace_exists(Path(namespace): Path<String>) -> impl IntoRespons
 pub async fn drop_namespace(Path(namespace): Path<String>) -> impl IntoResponse {
     // Logic to drop a namespace from the catalog
     // Ensure the namespace is empty before dropping
+    let db_path = "rocksdb";
+    let db = Arc::new(Database::open(db_path).unwrap());
+    let namespace_repo = NamespaceRepository::new(db.clone());
+    namespace_repo.delete_namespace(namespace.as_str());
     // Return HTTP status code 204 to indicate successful deletion
     StatusCode::NO_CONTENT
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct NamespaceProperties {
+    data: String,
 }
 
 pub async fn set_namespace_properties(Path(namespace): Path<String>) -> Json<NamespaceProperties> {
