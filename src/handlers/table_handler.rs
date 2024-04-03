@@ -1,14 +1,14 @@
+use crate::database::database::Database;
+use crate::dto::rename_request::TableRenameRequest;
+use crate::dto::table_data::TableData;
+use crate::repository::table::TableRepository;
 use axum::{
     extract::{Json, Path},
     http::StatusCode,
     response::IntoResponse,
 };
-use crate::database::database::Database;
-use crate::dto::table_data::TableData;
-use crate::dto::rename_request::TableRenameRequest;
-use crate::repository::table::TableRepository;
 
-const DB_PATH : &str = "rocksdb";
+const DB_PATH: &str = "rocksdb";
 
 pub async fn list_tables(Path(namespace): Path<String>) -> Json<Vec<String>> {
     // Logic to get all tables in the namespace
@@ -17,7 +17,10 @@ pub async fn list_tables(Path(namespace): Path<String>) -> Json<Vec<String>> {
     Json(repo.list_all_tables(&namespace).unwrap().unwrap())
 }
 
-pub async fn create_table(Path(namespace): Path<String>, table: Json<TableData>) -> impl IntoResponse {
+pub async fn create_table(
+    Path(namespace): Path<String>,
+    table: Json<TableData>,
+) -> impl IntoResponse {
     // Logic to create a table in the given namespace
     let database = Database::open(DB_PATH).unwrap();
     let repo = TableRepository::new(database);
@@ -27,7 +30,10 @@ pub async fn create_table(Path(namespace): Path<String>, table: Json<TableData>)
     }
 }
 
-pub async fn register_table(Path(namespace): Path<String> , table: Json<TableData>) -> impl IntoResponse {
+pub async fn register_table(
+    Path(namespace): Path<String>,
+    table: Json<TableData>,
+) -> impl IntoResponse {
     // Logic to register a table in the given namespace using metadata file location
     let database = Database::open(DB_PATH).unwrap();
     let repo = TableRepository::new(database);
@@ -56,13 +62,15 @@ pub async fn table_exists(Path((namespace, table)): Path<(String, String)>) -> i
     // Logic to check if a table exists within a given namespace
     let database = Database::open(DB_PATH).unwrap();
     let repo = TableRepository::new(database);
-    if repo.table_exists(namespace.as_str(), table.as_str()).unwrap() {
+    if repo
+        .table_exists(namespace.as_str(), table.as_str())
+        .unwrap()
+    {
         StatusCode::FOUND
     } else {
         StatusCode::NOT_FOUND
-    } 
+    }
 }
-
 
 // Handler functions
 pub async fn rename_table(request: Json<TableRenameRequest>) -> impl IntoResponse {
@@ -71,7 +79,7 @@ pub async fn rename_table(request: Json<TableRenameRequest>) -> impl IntoRespons
     let repo = TableRepository::new(database);
     match repo.rename_table(&request) {
         Ok(_) => StatusCode::OK,
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
 }
 

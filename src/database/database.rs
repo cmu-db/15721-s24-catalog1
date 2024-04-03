@@ -25,8 +25,9 @@ impl Database {
         let namespace_cf = ColumnFamilyDescriptor::new("NamespaceData", Options::default());
         let table_cf = ColumnFamilyDescriptor::new("TableData", Options::default());
         let operator_cf = ColumnFamilyDescriptor::new("OperatorStatistics", Options::default());
-        let table_namespace_cf = ColumnFamilyDescriptor::new("TableNamespaceMap", Options::default());
-        
+        let table_namespace_cf =
+            ColumnFamilyDescriptor::new("TableNamespaceMap", Options::default());
+
         let cfs_vec = vec![namespace_cf, table_cf, operator_cf, table_namespace_cf];
 
         let db = DB::open_cf_descriptors(&opts, path, cfs_vec)
