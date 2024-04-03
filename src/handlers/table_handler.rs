@@ -3,50 +3,80 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
+use crate::database::database::Database;
+use crate::dto::table_data::TableData;
+use crate::dto::rename_request::TableRenameRequest;
+use crate::repository::table::TableRepository;
+
+const DB_PATH : &str = "rocksdb";
 
 pub async fn list_tables(Path(namespace): Path<String>) -> Json<Vec<String>> {
-    // Dummy response for demonstration
-    let tables: Vec<String> = vec![
-        "accounting".to_string(),
-        "tax".to_string(),
-        "paid".to_string(),
-    ];
-    Json(tables)
+    // Logic to get all tables in the namespace
+    let database = Database::open("DB_PATH").unwrap();
+    let repo = TableRepository::new(database);
+    Json(repo.list_all_tables(&namespace).unwrap().unwrap())
 }
 
-pub async fn create_table(Path(namespace): Path<String>) -> impl IntoResponse {
+pub async fn create_table(Path(namespace): Path<String>, table: Json<TableData>) -> impl IntoResponse {
     // Logic to create a table in the given namespace
-    "Table created".to_string()
+    let database = Database::open(DB_PATH).unwrap();
+    let repo = TableRepository::new(database);
+    match repo.create_table(&namespace, &table) {
+        Ok(_) => StatusCode::OK,
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+    }
 }
 
-pub async fn register_table(Path(namespace): Path<String>) -> impl IntoResponse {
+pub async fn register_table(Path(namespace): Path<String> , table: Json<TableData>) -> impl IntoResponse {
     // Logic to register a table in the given namespace using metadata file location
-    "Table registered".to_string()
+    let database = Database::open(DB_PATH).unwrap();
+    let repo = TableRepository::new(database);
+    match repo.register_table(&namespace, &table) {
+        Ok(_) => StatusCode::OK,
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+    }
 }
 
-pub async fn load_table(Path((namespace, table)): Path<(String, String)>) -> impl IntoResponse {
+pub async fn load_table(Path((namespace, table)): Path<(String, String)>) -> Json<TableData> {
     // Logic to load a table from the catalog
-    Json(table)
+    let database = Database::open(DB_PATH).unwrap();
+    let repo = TableRepository::new(database);
+    Json(repo.load_table(&namespace, &table).unwrap().unwrap())
 }
 
 pub async fn delete_table(Path((namespace, table)): Path<(String, String)>) -> impl IntoResponse {
     // Logic to drop a table from the catalog
-    "Table dropped".to_string()
+    let database = Database::open(DB_PATH).unwrap();
+    let repo = TableRepository::new(database);
+    repo.drop_table(namespace.as_str(), table.as_str());
+    StatusCode::NO_CONTENT
 }
 
 pub async fn table_exists(Path((namespace, table)): Path<(String, String)>) -> impl IntoResponse {
     // Logic to check if a table exists within a given namespace
-    StatusCode::OK
+    let database = Database::open(DB_PATH).unwrap();
+    let repo = TableRepository::new(database);
+    if repo.table_exists(namespace.as_str(), table.as_str()).unwrap() {
+        StatusCode::FOUND
+    } else {
+        StatusCode::NOT_FOUND
+    } 
+}
+
+
+// Handler functions
+pub async fn rename_table(request: Json<TableRenameRequest>) -> impl IntoResponse {
+    // Logic to rename a table from its current name to a new name
+    let database = Database::open(DB_PATH).unwrap();
+    let repo = TableRepository::new(database);
+    match repo.rename_table(&request) {
+        Ok(_) => StatusCode::OK,
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR
+    }
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct MetricsReport {}
-
-// Handler functions
-pub async fn rename_table(table_rename: String) -> impl IntoResponse {
-    // Logic to rename a table from its current name to a new name
-    "Table renamed".to_string()
-}
 
 pub async fn report_metrics(Path((namespace, table)): Path<(String, String)>) -> impl IntoResponse {
     // Logic to process metrics report

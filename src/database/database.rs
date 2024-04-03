@@ -22,16 +22,12 @@ impl Database {
         opts.create_if_missing(true);
         opts.create_missing_column_families(true);
 
-        let namespace_cf_opts = Options::default();
-        let namespace_cf = ColumnFamilyDescriptor::new("NamespaceData", namespace_cf_opts);
-
-        let table_cf_opts = Options::default();
-        let table_cf = ColumnFamilyDescriptor::new("TableData", table_cf_opts);
-
-        let operator_cf_opts = Options::default();
-        let operator_cf = ColumnFamilyDescriptor::new("OperatorStatistics", operator_cf_opts);
-
-        let cfs_vec = vec![namespace_cf, table_cf, operator_cf];
+        let namespace_cf = ColumnFamilyDescriptor::new("NamespaceData", Options::default());
+        let table_cf = ColumnFamilyDescriptor::new("TableData", Options::default());
+        let operator_cf = ColumnFamilyDescriptor::new("OperatorStatistics", Options::default());
+        let table_namespace_cf = ColumnFamilyDescriptor::new("TableNamespaceMap", Options::default());
+        
+        let cfs_vec = vec![namespace_cf, table_cf, operator_cf, table_namespace_cf];
 
         let db = DB::open_cf_descriptors(&opts, path, cfs_vec)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
