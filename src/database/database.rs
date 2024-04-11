@@ -2,19 +2,11 @@ use rocksdb::{ColumnFamilyDescriptor, IteratorMode, Options, DB};
 use serde::{Deserialize, Serialize};
 use std::io::{self, ErrorKind};
 use std::path::Path;
-use std::sync::Arc;
 
 pub struct Database {
-    db: Arc<DB>,
+    db: DB,
 }
 
-impl Clone for Database {
-    fn clone(&self) -> Self {
-        Self {
-            db: Arc::clone(&self.db),
-        }
-    }
-}
 
 impl Database {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, std::io::Error> {
