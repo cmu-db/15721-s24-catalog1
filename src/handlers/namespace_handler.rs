@@ -7,7 +7,6 @@ use axum::{
 use serde_json::Value;
 use std::sync::Arc;
 
-const DB_PATH: &str = "rocksdb";
 
 pub async fn list_namespaces(
     State(repo): State<Arc<NamespaceRepository>>,
