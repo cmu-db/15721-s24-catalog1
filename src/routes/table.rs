@@ -34,10 +34,6 @@ pub fn routes() -> Router {
         .route(
             "/namespaces/:namespace/tables/:table/metrics",
             post(table_handler::report_metrics),
-        )
-        .route(
-            "/namespaces/:namespace/tables/:table/find/:tuple_id",
-            get(table_handler::find_tuple_location),
         );
 
     return router;
