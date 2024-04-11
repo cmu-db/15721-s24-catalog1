@@ -2,28 +2,31 @@ use crate::database::database::Database;
 use crate::dto::rename_request::TableRenameRequest;
 use crate::dto::table_data::TableData;
 use std::io::{Error, ErrorKind};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 pub struct TableRepository {
-    database: Arc<Database>,
+    database: Arc<Mutex<Database>>,
 }
 
 impl TableRepository {
-    pub fn new(database: Arc<Database>) -> Self {
+    pub fn new(database: Arc<Mutex<Database>>) -> Self {
         Self { database }
     }
 
     pub fn list_all_tables(&self, namespace: &str) -> Result<Option<Vec<String>>, Error> {
-        self.database
-            .get::<Vec<String>>("TableNamespaceMap", namespace)
+        let db = self.database.lock().unwrap();
+        db.get::<Vec<String>>("TableNamespaceMap", namespace)
     }
 
     pub fn create_table(&self, namespace: &str, table: &TableData) -> Result<(), Error> {
-        self.database.insert("TableData", &table.name, table)?;
-        let mut tables = self.list_all_tables(namespace).unwrap().unwrap_or_else(||vec![]);
+        let db = self.database.lock().unwrap();
+        db.insert("TableData", &table.name, table)?;
+        let mut tables = self
+            .list_all_tables(namespace)
+            .unwrap()
+            .unwrap_or_else(|| vec![]);
         tables.push(table.name.clone());
-        self.database
-            .insert("TableNamespaceMap", namespace, &tables)
+        db.insert("TableNamespaceMap", namespace, &tables)
     }
 
     pub fn register_table(&self, namespace: &str, table: &TableData) -> Result<(), Error> {
@@ -45,17 +48,17 @@ impl TableRepository {
                 ));
             }
         }
-
+        let db = self.database.lock().unwrap();
         // If the table is in the namespace, get the table data
-        self.database.get::<TableData>("TableData", table_name)
+        db.get::<TableData>("TableData", table_name)
     }
 
     pub fn drop_table(&self, namespace: &str, table_name: &str) -> Result<(), Error> {
-        self.database.delete("TableData", table_name)?;
+        let db = self.database.lock().unwrap();
+        db.delete("TableData", table_name)?;
         let mut tables = self.list_all_tables(namespace).unwrap().unwrap();
         tables.retain(|name| name != table_name);
-        self.database
-            .insert("TableNamespaceMap", namespace, &tables)
+        db.insert("TableNamespaceMap", namespace, &tables)
     }
 
     // for the ?? route

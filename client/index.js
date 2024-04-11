@@ -16,11 +16,12 @@ let config = {
 
 // Function to make concurrent requests
 async function sendConcurrentRequests() {
-  const numRequests = 3;
+  const numRequests = 10;
   const requests = [];
 
   // Create an array of Axios promises
   for (let i = 0; i < numRequests; i++) {
+    console.log("sending..")
     requests.push(axios.request(config)
     .then((response) => {
       console.log(JSON.stringify(response.data));

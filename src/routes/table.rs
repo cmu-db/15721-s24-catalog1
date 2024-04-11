@@ -1,10 +1,14 @@
+use crate::database::database::Database;
 use crate::handlers::table_handler;
+use crate::repository::table::TableRepository;
 use axum::{
     routing::{delete, get, head, post},
     Router,
 };
+use std::sync::{Arc, Mutex};
 
-pub fn routes() -> Router {
+pub fn routes(db: Arc<Mutex<Database>>) -> Router {
+    let repo = Arc::new(TableRepository::new(db));
     let router = Router::new()
         .route(
             "/namespaces/:namespace/tables",
@@ -34,7 +38,8 @@ pub fn routes() -> Router {
         .route(
             "/namespaces/:namespace/tables/:table/metrics",
             post(table_handler::report_metrics),
-        );
+        )
+        .with_state(repo);
 
     return router;
 }

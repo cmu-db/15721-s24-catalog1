@@ -7,7 +7,6 @@ pub struct Database {
     db: DB,
 }
 
-
 impl Database {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, std::io::Error> {
         let mut opts = Options::default();
