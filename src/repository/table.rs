@@ -2,14 +2,14 @@ use crate::database::database::Database;
 use crate::dto::rename_request::TableRenameRequest;
 use crate::dto::table_data::TableData;
 use std::io::{Error, ErrorKind};
+use std::sync::Arc;
 
 pub struct TableRepository {
-    // todo change to arc?
-    database: Database,
+    database: Arc<Database>,
 }
 
 impl TableRepository {
-    pub fn new(database: Database) -> Self {
+    pub fn new(database: Arc<Database>) -> Self {
         Self { database }
     }
 

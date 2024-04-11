@@ -6,11 +6,12 @@ use axum::{
     extract::{Json, Path},
     http::StatusCode
 };
+use std::sync::Arc;
 
 const DB_PATH: &str = "rocksdb";
 
 pub async fn list_tables(Path(namespace): Path<String>) -> Result<Json<Vec<String>>, (StatusCode, String)> {
-    let database = Database::open(DB_PATH).unwrap();
+    let database = Arc::new(Database::open(DB_PATH).unwrap());
     let repo = TableRepository::new(database);
     repo.list_all_tables(&namespace)
         .map(|tables| Json(tables.unwrap_or_default()))
@@ -21,7 +22,7 @@ pub async fn create_table(
     Path(namespace): Path<String>,
     table: Json<TableData>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    let database = Database::open(DB_PATH).unwrap();
+    let database = Arc::new(Database::open(DB_PATH).unwrap());
     let repo = TableRepository::new(database);
     repo.create_table(&namespace, &table)
         .map(|_| StatusCode::CREATED)
@@ -32,7 +33,7 @@ pub async fn register_table(
     Path(namespace): Path<String>,
     table: Json<TableData>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    let database = Database::open(DB_PATH).unwrap();
+    let database = Arc::new(Database::open(DB_PATH).unwrap());
     let repo = TableRepository::new(database);
     repo.register_table(&namespace, &table)
         .map(|_| StatusCode::CREATED)
@@ -40,7 +41,7 @@ pub async fn register_table(
 }
 
 pub async fn load_table(Path((namespace, table)): Path<(String, String)>) -> Result<Json<TableData>, (StatusCode, String)> {
-    let database = Database::open(DB_PATH).unwrap();
+    let database = Arc::new(Database::open(DB_PATH).unwrap());
     let repo = TableRepository::new(database);
     match repo.load_table(&namespace, &table) {
         Ok(Some(table_data)) => Ok(Json(table_data)),
@@ -50,7 +51,7 @@ pub async fn load_table(Path((namespace, table)): Path<(String, String)>) -> Res
 }
 
 pub async fn delete_table(Path((namespace, table)): Path<(String, String)>) -> Result<StatusCode, (StatusCode, String)> {
-    let database = Database::open(DB_PATH).unwrap();
+    let database = Arc::new(Database::open(DB_PATH).unwrap());
     let repo = TableRepository::new(database);
     repo.drop_table(&namespace, &table)
         .map(|_| StatusCode::NO_CONTENT)
@@ -58,7 +59,7 @@ pub async fn delete_table(Path((namespace, table)): Path<(String, String)>) -> R
 }
 
 pub async fn table_exists(Path((namespace, table)): Path<(String, String)>) -> Result<StatusCode, (StatusCode, String)> {
-    let database = Database::open(DB_PATH).unwrap();
+    let database = Arc::new(Database::open(DB_PATH).unwrap());
     let repo = TableRepository::new(database);
     match repo.table_exists(&namespace, &table) {
         Ok(true) => Ok(StatusCode::FOUND),
@@ -68,7 +69,7 @@ pub async fn table_exists(Path((namespace, table)): Path<(String, String)>) -> R
 }
 
 pub async fn rename_table(request: Json<TableRenameRequest>) -> Result<StatusCode, (StatusCode, String)> {
-    let database = Database::open(DB_PATH).unwrap();
+    let database = Arc::new(Database::open(DB_PATH).unwrap());
     let repo = TableRepository::new(database);
     repo.rename_table(&request)
         .map(|_| StatusCode::OK)
