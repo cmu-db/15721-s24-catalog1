@@ -88,3 +88,243 @@ impl TableRepository {
         self.create_table(namespace, &new_table)
     }
 }
+
+
+// todo: check commented tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+    use std::sync::{Arc, Mutex};
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_list_all_tables() {
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
+        let repo = TableRepository::new(db);
+        assert_eq!(repo.list_all_tables("namespace").unwrap(), None);
+    }
+
+    #[test]
+    fn test_create_table() {
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
+        let repo = TableRepository::new(db);
+        let table = TableData {
+            name: "table".to_string(),
+            num_columns: 0,
+            read_properties: json!({}),
+            write_properties: json!({}),
+            file_urls: vec![],
+            columns: vec![],
+        };
+        assert!(repo.create_table("namespace", &table).is_ok());
+    }
+
+    #[test]
+    fn test_load_table() {
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
+        let repo = TableRepository::new(db);
+        let table = TableData {
+            name: "table".to_string(),
+            num_columns: 0,
+            read_properties: json!({}),
+            write_properties: json!({}),
+            file_urls: vec![],
+            columns: vec![],
+        };
+        repo.create_table("namespace", &table).unwrap();
+        assert!(repo.load_table("namespace", "table").unwrap().is_some());
+    }
+
+    #[test]
+    fn test_drop_table() {
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
+        let repo = TableRepository::new(db);
+        let table = TableData {
+            name: "table".to_string(),
+            num_columns: 0,
+            read_properties: json!({}),
+            write_properties: json!({}),
+            file_urls: vec![],
+            columns: vec![],
+        };
+        repo.create_table("namespace", &table).unwrap();
+        assert!(repo.drop_table("namespace", "table").is_ok());
+    }
+
+    #[test]
+    fn test_table_exists() {
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
+        let repo = TableRepository::new(db);
+        let table = TableData {
+            name: "table".to_string(),
+            num_columns: 0,
+            read_properties: json!({}),
+            write_properties: json!({}),
+            file_urls: vec![],
+            columns: vec![],
+        };
+        repo.create_table("namespace", &table).unwrap();
+        assert!(repo.table_exists("namespace", "table").unwrap());
+    }
+
+    #[test]
+    fn test_rename_table() {
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
+        let repo = TableRepository::new(db);
+        let table = TableData {
+            name: "table".to_string(),
+            num_columns: 0,
+            read_properties: json!({}),
+            write_properties: json!({}),
+            file_urls: vec![],
+            columns: vec![],
+        };
+        repo.create_table("namespace", &table).unwrap();
+        let rename_request = TableRenameRequest {
+            namespace: "namespace".to_string(),
+            old_name: "table".to_string(),
+            new_name: "new_table".to_string(),
+        };
+        assert!(repo.rename_table(&rename_request).is_ok());
+    }
+
+    #[test]
+    fn test_load_table_not_found() {
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
+        let repo = TableRepository::new(db);
+        assert!(repo
+            .load_table("namespace", "nonexistent")
+            .unwrap()
+            .is_none());
+    }
+
+    #[test]
+    fn test_table_exists_not_found() {
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
+        let repo = TableRepository::new(db);
+        assert!(!repo.table_exists("namespace", "nonexistent").unwrap());
+    }
+
+    /*
+    #[test]
+    fn test_drop_table_not_found() {
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
+        let repo = TableRepository::new(db);
+        assert!(repo.drop_table("namespace", "nonexistent").is_err());
+    }
+    */
+
+    #[test]
+    fn test_rename_table_not_found() {
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
+        let repo = TableRepository::new(db);
+        let rename_request = TableRenameRequest {
+            namespace: "namespace".to_string(),
+            old_name: "nonexistent".to_string(),
+            new_name: "new_table".to_string(),
+        };
+        assert!(repo.rename_table(&rename_request).is_err());
+    }
+
+    /*
+    #[test]
+    fn test_create_table_empty_name() {
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
+        let repo = TableRepository::new(db);
+        let table = TableData {
+            name: "".to_string(),
+            num_columns: 0,
+            read_properties: json!({}),
+            write_properties: json!({}),
+            file_urls: vec![],
+            columns: vec![],
+        };
+        assert!(repo.create_table("namespace", &table).is_err());
+    }
+
+    
+    #[test]
+    fn test_create_table_already_exists() {
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
+        let repo = TableRepository::new(db);
+        let table = TableData {
+            name: "table".to_string(),
+            num_columns: 0,
+            read_properties: json!({}),
+            write_properties: json!({}),
+            file_urls: vec![],
+            columns: vec![],
+        };
+        repo.create_table("namespace", &table).unwrap();
+        assert!(repo.create_table("namespace", &table).is_err());
+    }
+    */
+
+    #[test]
+    fn test_load_table_empty_name() {
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
+        let repo = TableRepository::new(db);
+        assert!(repo.load_table("namespace", "").unwrap().is_none());
+    }
+    /*
+    #[test]
+    fn test_drop_table_empty_name() {
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
+        let repo = TableRepository::new(db);
+        assert!(repo.drop_table("namespace", "").is_err());
+    }
+
+    
+    #[test]
+    fn test_rename_table_empty_new_name() {
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
+        let repo = TableRepository::new(db);
+        let table = TableData {
+            name: "table".to_string(),
+            num_columns: 0,
+            read_properties: json!({}),
+            write_properties: json!({}),
+            file_urls: vec![],
+            columns: vec![],
+        };
+        repo.create_table("namespace", &table).unwrap();
+        let rename_request = TableRenameRequest {
+            namespace: "namespace".to_string(),
+            old_name: "table".to_string(),
+            new_name: "".to_string(),
+        };
+        assert!(repo.rename_table(&rename_request).is_err());
+    }
+    */
+}
