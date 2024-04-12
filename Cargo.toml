@@ -16,3 +16,7 @@ rocksdb = "0.22.0"
 
 pretty_assertions = "0.7"
 select = "0.5"
+
+[dev-dependencies]
+tempfile = "3.2.0"
+

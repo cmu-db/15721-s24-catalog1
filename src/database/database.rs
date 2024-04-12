@@ -112,3 +112,143 @@ impl Database {
         Ok(())
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_open() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path());
+        assert!(db.is_ok());
+    }
+
+    #[test]
+    fn test_insert_and_get() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+        let key = "test_key";
+        let value = "test_value";
+
+        // Test insert
+        let insert_result = db.insert("NamespaceData", key, &value);
+        assert!(insert_result.is_ok());
+
+        // Test get
+        let get_result: Result<Option<String>, _> = db.get("NamespaceData", key);
+        assert!(get_result.is_ok());
+        assert_eq!(get_result.unwrap().unwrap(), value);
+    }
+
+    #[test]
+    fn test_delete() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+        let key = "test_key";
+        let value = "test_value";
+
+        // Insert a key-value pair
+        db.insert("NamespaceData", key, &value).unwrap();
+
+        // Delete the key
+        let delete_result = db.delete("NamespaceData", key);
+        assert!(delete_result.is_ok());
+
+        // Try to get the deleted key
+        let get_result: Result<Option<String>, _> = db.get("NamespaceData", key);
+        assert!(get_result.is_ok());
+        assert!(get_result.unwrap().is_none());
+    }
+
+    #[test]
+    fn test_insert_and_get_nonexistent_cf() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+        let key = "test_key";
+        let value = "test_value";
+
+        // Test insert with nonexistent column family
+        let insert_result = db.insert("NonexistentCF", key, &value);
+        assert!(insert_result.is_err());
+
+        // Test get with nonexistent column family
+        let get_result: Result<Option<String>, _> = db.get("NonexistentCF", key);
+        assert!(get_result.is_err());
+    }
+
+    #[test]
+    fn test_get_nonexistent_key() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+
+        // Test get with nonexistent key
+        let get_result: Result<Option<String>, _> = db.get("NamespaceData", "nonexistent_key");
+        assert!(get_result.is_ok());
+        assert!(get_result.unwrap().is_none());
+    }
+
+    #[test]
+    fn test_delete_nonexistent_key() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+
+        // Test delete with nonexistent key
+        let delete_result = db.delete("NamespaceData", "nonexistent_key");
+        assert!(delete_result.is_ok());
+    }
+
+    #[test]
+    fn test_insert_and_get_empty_key() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+        let key = "";
+        let value = "test_value";
+
+        // Test insert with empty key
+        let insert_result = db.insert("NamespaceData", key, &value);
+        assert!(insert_result.is_ok());
+
+        // Test get with empty key
+        let get_result: Result<Option<String>, _> = db.get("NamespaceData", key);
+        assert!(get_result.is_ok());
+        assert_eq!(get_result.unwrap().unwrap(), value);
+    }
+
+    #[test]
+    fn test_insert_and_get_empty_value() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+        let key = "test_key";
+        let value = "";
+
+        // Test insert with empty value
+        let insert_result = db.insert("NamespaceData", key, &value);
+        assert!(insert_result.is_ok());
+
+        // Test get with empty value
+        let get_result: Result<Option<String>, _> = db.get("NamespaceData", key);
+        assert!(get_result.is_ok());
+        assert_eq!(get_result.unwrap().unwrap(), value);
+    }
+
+    #[test]
+    fn test_insert_and_get_large_data() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+        let key = "test_key";
+        let value = "a".repeat(1_000_000);
+
+        // Test insert with large data
+        let insert_result = db.insert("NamespaceData", key, &value);
+        assert!(insert_result.is_ok());
+
+        // Test get with large data
+        let get_result: Result<Option<String>, _> = db.get("NamespaceData", key);
+        assert!(get_result.is_ok());
+        assert_eq!(get_result.unwrap().unwrap(), value);
+    }
+
+}
