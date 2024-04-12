@@ -89,7 +89,6 @@ impl TableRepository {
     }
 }
 
-
 // todo: check commented tests
 #[cfg(test)]
 mod tests {
@@ -265,7 +264,6 @@ mod tests {
         assert!(repo.create_table("namespace", &table).is_err());
     }
 
-    
     #[test]
     fn test_create_table_already_exists() {
         let db = Arc::new(Mutex::new(
@@ -303,7 +301,6 @@ mod tests {
         assert!(repo.drop_table("namespace", "").is_err());
     }
 
-    
     #[test]
     fn test_rename_table_empty_new_name() {
         let db = Arc::new(Mutex::new(
