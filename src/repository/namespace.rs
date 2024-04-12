@@ -70,24 +70,30 @@ mod tests {
     use super::*;
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
-    
+
     #[test]
     fn test_list_all_namespaces() {
-        let db = Arc::new(Mutex::new(Database::open(tempdir().unwrap().path()).unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
         let repo = NamespaceRepository::new(db);
         assert_eq!(repo.list_all_namespaces().unwrap(), Vec::<String>::new());
     }
 
     #[test]
     fn test_create_namespace() {
-        let db = Arc::new(Mutex::new(Database::open(tempdir().unwrap().path()).unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
         let repo = NamespaceRepository::new(db);
         assert!(repo.create_namespace("test".to_string(), None).is_ok());
     }
 
     #[test]
     fn test_load_namespace() {
-        let db = Arc::new(Mutex::new(Database::open(tempdir().unwrap().path()).unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
         let repo = NamespaceRepository::new(db);
         repo.create_namespace("test".to_string(), None).unwrap();
         assert!(repo.load_namespace("test").unwrap().is_some());
@@ -95,7 +101,9 @@ mod tests {
 
     #[test]
     fn test_namespace_exists() {
-        let db = Arc::new(Mutex::new(Database::open(tempdir().unwrap().path()).unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
         let repo = NamespaceRepository::new(db);
         repo.create_namespace("test".to_string(), None).unwrap();
         assert!(repo.namespace_exists("test").unwrap());
@@ -103,7 +111,9 @@ mod tests {
 
     #[test]
     fn test_delete_namespace() {
-        let db = Arc::new(Mutex::new(Database::open(tempdir().unwrap().path()).unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
         let repo = NamespaceRepository::new(db);
         repo.create_namespace("test".to_string(), None).unwrap();
         assert!(repo.delete_namespace("test").is_ok());
@@ -111,22 +121,30 @@ mod tests {
 
     #[test]
     fn test_set_namespace_properties() {
-        let db = Arc::new(Mutex::new(Database::open(tempdir().unwrap().path()).unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
         let repo = NamespaceRepository::new(db);
         repo.create_namespace("test".to_string(), None).unwrap();
-        assert!(repo.set_namespace_properties("test", json!({"property": "value"})).is_ok());
+        assert!(repo
+            .set_namespace_properties("test", json!({"property": "value"}))
+            .is_ok());
     }
 
     #[test]
     fn test_load_namespace_not_found() {
-        let db = Arc::new(Mutex::new(Database::open(tempdir().unwrap().path()).unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
         let repo = NamespaceRepository::new(db);
         assert!(repo.load_namespace("nonexistent").unwrap().is_none());
     }
 
     #[test]
     fn test_namespace_exists_not_found() {
-        let db = Arc::new(Mutex::new(Database::open(tempdir().unwrap().path()).unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
         let repo = NamespaceRepository::new(db);
         assert!(!repo.namespace_exists("nonexistent").unwrap());
     }
@@ -140,9 +158,13 @@ mod tests {
 
     #[test]
     fn test_set_namespace_properties_not_found() {
-        let db = Arc::new(Mutex::new(Database::open(tempdir().unwrap().path()).unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
         let repo = NamespaceRepository::new(db);
-        assert!(repo.set_namespace_properties("nonexistent", json!({"property": "value"})).is_err());
+        assert!(repo
+            .set_namespace_properties("nonexistent", json!({"property": "value"}))
+            .is_err());
     }
 
     // #[test]
@@ -162,9 +184,13 @@ mod tests {
 
     #[test]
     fn test_set_namespace_properties_empty_name() {
-        let db = Arc::new(Mutex::new(Database::open(tempdir().unwrap().path()).unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
         let repo = NamespaceRepository::new(db);
-        assert!(repo.set_namespace_properties("", json!({"property": "value"})).is_err());
+        assert!(repo
+            .set_namespace_properties("", json!({"property": "value"}))
+            .is_err());
     }
 
     // #[test]
@@ -177,14 +203,18 @@ mod tests {
 
     #[test]
     fn test_load_namespace_empty_name() {
-        let db = Arc::new(Mutex::new(Database::open(tempdir().unwrap().path()).unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
         let repo = NamespaceRepository::new(db);
         assert!(repo.load_namespace("").unwrap().is_none());
     }
 
     #[test]
     fn test_namespace_exists_empty_name() {
-        let db = Arc::new(Mutex::new(Database::open(tempdir().unwrap().path()).unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
         let repo = NamespaceRepository::new(db);
         assert!(!repo.namespace_exists("").unwrap());
     }
@@ -198,14 +228,20 @@ mod tests {
 
     #[test]
     fn test_create_namespace_null_properties() {
-        let db = Arc::new(Mutex::new(Database::open(tempdir().unwrap().path()).unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
         let repo = NamespaceRepository::new(db);
-        assert!(repo.create_namespace("test".to_string(), Some(json!(null))).is_ok());
+        assert!(repo
+            .create_namespace("test".to_string(), Some(json!(null)))
+            .is_ok());
     }
 
     #[test]
     fn test_set_namespace_properties_null() {
-        let db = Arc::new(Mutex::new(Database::open(tempdir().unwrap().path()).unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
         let repo = NamespaceRepository::new(db);
         repo.create_namespace("test".to_string(), None).unwrap();
         assert!(repo.set_namespace_properties("test", json!(null)).is_ok());
@@ -213,7 +249,9 @@ mod tests {
 
     #[test]
     fn test_set_namespace_properties_with_empty_json() {
-        let db = Arc::new(Mutex::new(Database::open(tempdir().unwrap().path()).unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::open(tempdir().unwrap().path()).unwrap(),
+        ));
         let repo = NamespaceRepository::new(db);
         repo.create_namespace("test".to_string(), None).unwrap();
         assert!(repo.set_namespace_properties("test", json!({})).is_ok());
