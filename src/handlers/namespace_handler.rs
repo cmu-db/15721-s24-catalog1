@@ -7,7 +7,6 @@ use axum::{
 use serde_json::Value;
 use std::sync::Arc;
 
-
 pub async fn list_namespaces(
     State(repo): State<Arc<NamespaceRepository>>,
 ) -> Result<Json<Vec<String>>, (StatusCode, String)> {

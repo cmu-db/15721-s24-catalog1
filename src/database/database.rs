@@ -113,7 +113,6 @@ impl Database {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -250,5 +249,4 @@ mod tests {
         assert!(get_result.is_ok());
         assert_eq!(get_result.unwrap().unwrap(), value);
     }
-
 }

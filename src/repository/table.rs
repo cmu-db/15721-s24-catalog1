@@ -21,7 +21,8 @@ impl TableRepository {
     pub fn create_table(&self, namespace: &str, table: &TableData) -> Result<(), Error> {
         let db = self.database.lock().unwrap();
         db.insert("TableData", &table.name, table)?;
-        let mut tables = db.get::<Vec<String>>("TableNamespaceMap", namespace)
+        let mut tables = db
+            .get::<Vec<String>>("TableNamespaceMap", namespace)
             .unwrap()
             .unwrap_or_else(|| vec![]);
         tables.push(table.name.clone());
@@ -56,7 +57,10 @@ impl TableRepository {
     pub fn drop_table(&self, namespace: &str, table_name: &str) -> Result<(), Error> {
         let db = self.database.lock().unwrap();
         db.delete("TableData", table_name)?;
-        let mut tables = db.get::<Vec<String>>("TableNamespaceMap", namespace).unwrap().unwrap();
+        let mut tables = db
+            .get::<Vec<String>>("TableNamespaceMap", namespace)
+            .unwrap()
+            .unwrap();
         tables.retain(|name| name != table_name);
         db.insert("TableNamespaceMap", namespace, &tables)
     }
