@@ -1,5 +1,6 @@
 use crate::database::database::Database;
 use crate::dto::namespace_data::NamespaceData;
+use serde::{Serialize, Deserialize};
 use serde_json::{json, Value};
 use std::io;
 use std::sync::{Arc, Mutex};
@@ -7,6 +8,7 @@ use std::sync::{Arc, Mutex};
 pub struct NamespaceRepository {
     database: Arc<Mutex<Database>>,
 }
+
 
 impl NamespaceRepository {
     pub fn new(database: Arc<Mutex<Database>>) -> Self {
