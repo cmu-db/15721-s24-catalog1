@@ -1,16 +1,64 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ErrorModel {
-    pub message: String,
-    #[serde(rename = "type")]  // Use serde rename attribute to match the property name in JSON
-    pub error_type: String,
-    pub code: i32,
-    #[serde(default)]  // Use serde default attribute to set a default value for an optional field
-    pub stack: Vec<String>
+  pub message: String,
+  pub r#type: String, // Use `r#type` to avoid keyword conflict
+  pub code: u16,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub stack: Option<Vec<String>>,
 }
 
-pub enum ErrorType {
+#[derive(Debug, Deserialize, Serialize)]
+pub struct IcebergErrorResponse {
+  pub error: ErrorModel,
+}
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CommonResponse {
+  pub error: Option<IcebergErrorResponse>,
+}
+
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct BadRequestErrorResponse(pub CommonResponse);
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UnauthorizedResponse(pub CommonResponse);
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ForbiddenResponse(pub CommonResponse);
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UnsupportedOperationResponse(pub CommonResponse);
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ServiceUnavailableResponse(pub CommonResponse);
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ServerErrorResponse(pub CommonResponse);
+
+#[derive(Debug, Deserialize, Serialize)]
+pub enum ErrorTypes {
+  BadRequest(String),
+  Unauthorized(String),
+  Forbidden(String),
+  UnsupportedOperation(String),
+  ServiceUnavailable(String),
+  ServerError(String),
+}
+
+impl std::fmt::Display for ErrorTypes {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      ErrorTypes::BadRequest(msg) => write!(f, "Bad Request: {}", msg),
+      ErrorTypes::Unauthorized(msg) => write!(f, "Unauthorized: {}", msg),
+      ErrorTypes::Forbidden(msg) => write!(f, "Forbidden: {}", msg),
+      ErrorTypes::UnsupportedOperation(msg) => write!(f, "Unsupported Operation: {}", msg),
+      ErrorTypes::ServiceUnavailable(msg) => write!(f, "Service Unavailable: {}", msg),
+      ErrorTypes::ServerError(msg) => write!(f, "Internal Server Error: {}", msg),
+    }
+  }
 }
