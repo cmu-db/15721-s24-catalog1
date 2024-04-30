@@ -1,5 +1,6 @@
 use crate::database::database::Database;
 use crate::dto::namespace_data::NamespaceData;
+use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use serde_json::{json, Value};
 use std::io;
@@ -9,6 +10,20 @@ pub struct NamespaceRepository {
     database: Arc<Mutex<Database>>,
 }
 
+/// NamespaceIdent represents the identifier of a namespace in the catalog.
+///
+/// The namespace identifier is a list of strings, where each string is a
+/// component of the namespace. It's catalog implementer's responsibility to
+/// handle the namespace identifier correctly.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct NamespaceIdent(Vec<String>);
+
+/// Namespace represents a namespace in the catalog.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct Namespace {
+    name: NamespaceIdent,
+    properties: HashMap<String, String>,
+}
 
 impl NamespaceRepository {
     pub fn new(database: Arc<Mutex<Database>>) -> Self {

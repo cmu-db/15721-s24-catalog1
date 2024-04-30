@@ -1,12 +1,10 @@
 use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
-pub struct Namespace(pub Vec<String>);
+use crate::repository::namespace::Namespace;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Properties(pub std::collections::HashMap<String, String>);
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct CreateNamespaceRequest {
     pub namespace: Namespace,

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use crate::repository::namespace::{Namespace, NamespaceIdent};
 
 #[serde(rename_all = "kebab-case")]
 #[derive(Debug, Deserialize, Serialize)]
