@@ -25,17 +25,6 @@ impl TableIdent {
     pub fn new(namespace: NamespaceIdent, name: String) -> Self {
         Self { namespace, name }
     }
-
-    /// Get the namespace of the table.
-    /// this returns the identifier of the namespace
-    pub fn namespace(&self) -> &NamespaceIdent {
-        &self.namespace
-    }
-
-    /// Get the name of the table.
-    pub fn name(&self) -> &str {
-        &self.name
-    }
 }
 
 
@@ -43,13 +32,15 @@ impl TableIdent {
 pub struct TableCreation {
     /// The name of the table.
     pub name: String,
-    pub properties: HashMap<String, String>,
+    // pub file_urls: Option<Vec<String>>,
+    // pub columns: Option<Vec<ColumnData>>,
+    // pub properties: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TableMetadata {
   pub table_uuid: String,
-  pub location: Option<String>,
-  pub file_urls: Option<Vec<String>>,
-  pub columns: Option<Vec<ColumnData>>,
+//   pub file_urls: Option<Vec<String>>,
+//   pub columns: Option<Vec<ColumnData>>,
+//   pub properties: Option<HashMap<String, String>>,
 }

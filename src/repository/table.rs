@@ -23,7 +23,6 @@ impl TableRepository {
 
     pub fn create_table(&self, namespace: &NamespaceIdent, table_creation: &TableCreation) -> Result<(), Error> {
         let db = self.database.lock().unwrap();
-        
         match db.get("NamespaceData", namespace)? {
             Some(data) => data,
             None => {
@@ -36,15 +35,9 @@ impl TableRepository {
 
         let table_id = TableIdent::new(namespace.clone(), table_creation.name.clone());
         let table_uuid = Uuid::new_v4().to_string(); 
-        let location = table_creation.properties.get("location").cloned();
-        let file_urls = table_creation.properties.get("file_urls").cloned().map(|s| vec![s]);
-        let columns = table_creation.properties.get("columns").and_then(|v| serde_json::from_str::<Vec<ColumnData>>(v).ok());
 
         let table_metadata = TableMetadata{
-            table_uuid,
-            location,
-            file_urls,
-            columns,
+            table_uuid
         };
 
         db.insert("TableData", &table_creation.name, &Table{id: table_id.clone(), metadata: table_metadata})?;
