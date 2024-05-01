@@ -7,9 +7,9 @@ use std::collections::HashMap;
 
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct TableData {
-    pub name: String,
-    pub num_columns: u64,
+pub struct Table {
+    pub id: TableIdent,
+    pub metadata: TableMetadata,
     pub read_properties: Value,
     pub write_properties: Value,
     pub file_urls: Vec<String>,
@@ -24,6 +24,7 @@ pub struct TableIdent {
     /// Table name.
     pub name: String,
 }
+
 impl TableIdent {
     /// Create a new table identifier.
     pub fn new(namespace: NamespaceIdent, name: String) -> Self {
@@ -42,14 +43,20 @@ impl TableIdent {
     }
 }
 
-// TableCreation represents the creation of a table in the catalog.
-// #[derive(Debug, TypedBuilder)]
-// pub struct TableCreation {
-//     /// The name of the table.
-//     pub name: String,
-//     /// The schema of the table.
-//     pub schema: Schema,
-//     /// The properties of the table.
-//     #[builder(default)]
-//     pub properties: HashMap<String, String>,
-// }
+
+#[derive(Debug, TypedBuilder)]
+pub struct TableCreation {
+    /// The name of the table.
+    pub name: String,
+    pub properties: HashMap<String, String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TableMetadata {
+  pub table_uuid: String,
+  pub location: Option<String>,
+  pub last_updated_ms: Option<i64>,
+  pub properties: HashMap<String, String>,
+  pub file_urls: Option<Vec<String>>,
+  pub columns: Option<Vec<ColumnData>>,
+}
