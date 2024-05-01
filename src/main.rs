@@ -5,6 +5,7 @@ mod handlers;
 mod repository;
 mod routes;
 mod tests;
+mod structs;
 
 use config::parameters;
 use database::database::Database;
