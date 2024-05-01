@@ -27,7 +27,7 @@ impl Database {
         Ok(Self { db: db.into() })
     }
 
-    pub fn list_all_keys(&self, cf: &str) -> Result<Vec<String>, io::Error> {
+    pub fn list_all_keys<K: Serialize + for<'de> Deserialize<'de>>(&self, cf: &str) -> Result<Vec<K>, io::Error> {
         let cf_handle = self.db.cf_handle(cf).ok_or_else(|| {
             io::Error::new(
                 ErrorKind::NotFound,
@@ -38,9 +38,9 @@ impl Database {
         let iter = self.db.iterator_cf(cf_handle, IteratorMode::Start);
         for item in iter {
             let (key, _) = item.map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
-            let key_str = String::from_utf8(key.to_vec())
+            let key_obj: K = serde_json::from_slice(&key)
                 .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
-            keys.push(key_str);
+            keys.push(key_obj);
         }
         Ok(keys)
     }
@@ -54,16 +54,18 @@ impl Database {
         })?;
         let value = serde_json::to_vec(value)
             .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
+        let key_bytes = serde_json::to_vec(key)
+            .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
         self.db
-            .put_cf(cf_handle, key.as_bytes(), &value)
+            .put_cf(cf_handle, key_bytes, &value)
             .map_err(|e| io::Error::new(ErrorKind::Other, e))?;
         Ok(())
     }
 
-    pub fn get<V: for<'de> Deserialize<'de>>(
+    pub fn get<K: for<'de> Deserialize<'de> + Serialize, V: for<'de> Deserialize<'de>>(
         &self,
         cf: &str,
-        key: &str,
+        key: &K,
     ) -> Result<Option<V>, io::Error> {
         let cf_handle = self.db.cf_handle(cf).ok_or_else(|| {
             io::Error::new(
@@ -71,9 +73,11 @@ impl Database {
                 format!("Column family {} not found", cf),
             )
         })?;
+        let key_bytes = serde_json::to_vec(key)
+            .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
         let value = self
             .db
-            .get_cf(cf_handle, key.as_bytes())
+            .get_cf(cf_handle, &key_bytes)
             .map_err(|e| io::Error::new(ErrorKind::Other, e))?;
         match value {
             Some(db_vec) => {
@@ -83,21 +87,24 @@ impl Database {
             None => Ok(None),
         }
     }
+    
 
-    pub fn delete(&self, cf: &str, key: &str) -> Result<(), io::Error> {
+    pub fn delete<K: for<'de> Deserialize<'de> + Serialize>(&self, cf: &str, key: &K) -> Result<(), io::Error> {
         let cf_handle = self.db.cf_handle(cf).ok_or_else(|| {
             io::Error::new(
                 ErrorKind::NotFound,
                 format!("Column family {} not found", cf),
             )
         })?;
+        let key_bytes = serde_json::to_vec(key)
+            .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
         self.db
-            .delete_cf(cf_handle, key.as_bytes())
+            .delete_cf(cf_handle, key_bytes)
             .map_err(|e| io::Error::new(ErrorKind::Other, e))?;
         Ok(())
     }
 
-    pub fn update<V: Serialize>(&self, cf: &str, key: &str, value: &V) -> Result<(), io::Error> {
+    pub fn update<K: Serialize, V: Serialize>(&self, cf: &str, key: &K, value: &V) -> Result<(), io::Error> {
         let cf_handle = self.db.cf_handle(cf).ok_or_else(|| {
             io::Error::new(
                 ErrorKind::NotFound,
@@ -106,8 +113,10 @@ impl Database {
         })?;
         let value = serde_json::to_vec(value)
             .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
+        let key_bytes = serde_json::to_vec(key)
+            .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
         self.db
-            .put_cf(cf_handle, key.as_bytes(), &value)
+            .put_cf(cf_handle, key_bytes, &value)
             .map_err(|e| io::Error::new(ErrorKind::Other, e))?;
         Ok(())
     }
@@ -133,11 +142,11 @@ mod tests {
         let value = "test_value";
 
         // Test insert
-        let insert_result = db.insert("NamespaceData", key, &value);
+        let insert_result = db.insert("NamespaceData", &key, &value);
         assert!(insert_result.is_ok());
 
         // Test get
-        let get_result: Result<Option<String>, _> = db.get("NamespaceData", key);
+        let get_result: Result<Option<String>, _> = db.get("NamespaceData", &key);
         assert!(get_result.is_ok());
         assert_eq!(get_result.unwrap().unwrap(), value);
     }
@@ -150,14 +159,14 @@ mod tests {
         let value = "test_value";
 
         // Insert a key-value pair
-        db.insert("NamespaceData", key, &value).unwrap();
+        db.insert("NamespaceData", &key, &value).unwrap();
 
         // Delete the key
-        let delete_result = db.delete("NamespaceData", key);
+        let delete_result = db.delete("NamespaceData", &key);
         assert!(delete_result.is_ok());
 
         // Try to get the deleted key
-        let get_result: Result<Option<String>, _> = db.get("NamespaceData", key);
+        let get_result: Result<Option<String>, _> = db.get("NamespaceData", &key);
         assert!(get_result.is_ok());
         assert!(get_result.unwrap().is_none());
     }
@@ -170,11 +179,11 @@ mod tests {
         let value = "test_value";
 
         // Test insert with nonexistent column family
-        let insert_result = db.insert("NonexistentCF", key, &value);
+        let insert_result = db.insert("NonexistentCF", &key, &value);
         assert!(insert_result.is_err());
 
         // Test get with nonexistent column family
-        let get_result: Result<Option<String>, _> = db.get("NonexistentCF", key);
+        let get_result: Result<Option<String>, _> = db.get("NonexistentCF", &key);
         assert!(get_result.is_err());
     }
 
@@ -184,7 +193,7 @@ mod tests {
         let db = Database::open(dir.path()).unwrap();
 
         // Test get with nonexistent key
-        let get_result: Result<Option<String>, _> = db.get("NamespaceData", "nonexistent_key");
+        let get_result: Result<Option<String>, _> = db.get("NamespaceData", &"nonexistent_key");
         assert!(get_result.is_ok());
         assert!(get_result.unwrap().is_none());
     }
@@ -195,7 +204,7 @@ mod tests {
         let db = Database::open(dir.path()).unwrap();
 
         // Test delete with nonexistent key
-        let delete_result = db.delete("NamespaceData", "nonexistent_key");
+        let delete_result = db.delete("NamespaceData", &"nonexistent_key");
         assert!(delete_result.is_ok());
     }
 
@@ -207,11 +216,11 @@ mod tests {
         let value = "test_value";
 
         // Test insert with empty key
-        let insert_result = db.insert("NamespaceData", key, &value);
+        let insert_result = db.insert("NamespaceData", &key, &value);
         assert!(insert_result.is_ok());
 
         // Test get with empty key
-        let get_result: Result<Option<String>, _> = db.get("NamespaceData", key);
+        let get_result: Result<Option<String>, _> = db.get("NamespaceData", &key);
         assert!(get_result.is_ok());
         assert_eq!(get_result.unwrap().unwrap(), value);
     }
@@ -224,11 +233,11 @@ mod tests {
         let value = "";
 
         // Test insert with empty value
-        let insert_result = db.insert("NamespaceData", key, &value);
+        let insert_result = db.insert("NamespaceData", &key, &value);
         assert!(insert_result.is_ok());
 
         // Test get with empty value
-        let get_result: Result<Option<String>, _> = db.get("NamespaceData", key);
+        let get_result: Result<Option<String>, _> = db.get("NamespaceData", &key);
         assert!(get_result.is_ok());
         assert_eq!(get_result.unwrap().unwrap(), value);
     }
@@ -241,11 +250,11 @@ mod tests {
         let value = "a".repeat(1_000_000);
 
         // Test insert with large data
-        let insert_result = db.insert("NamespaceData", key, &value);
+        let insert_result = db.insert("NamespaceData", &key, &value);
         assert!(insert_result.is_ok());
 
         // Test get with large data
-        let get_result: Result<Option<String>, _> = db.get("NamespaceData", key);
+        let get_result: Result<Option<String>, _> = db.get("NamespaceData", &key);
         assert!(get_result.is_ok());
         assert_eq!(get_result.unwrap().unwrap(), value);
     }
