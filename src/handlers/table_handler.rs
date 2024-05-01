@@ -1,40 +1,43 @@
-// use crate::dto::rename_request::TableRenameRequest;
-// use crate::dto::table_data::TableData;
-// use crate::repository::table::TableRepository;
-// use axum::{
-//     extract::{Json, Path, State},
-//     http::StatusCode,
-// };
-// use std::sync::Arc;
+use crate::dto::rename_request::TableRenameRequest;
+use crate::dto::table_data::{TableIdent, TableCreation, TableMetadata, Table};
+use crate::repository::table::TableRepository;
+use crate::dto::namespace_data::{NamespaceIdent};
+use axum::{
+    extract::{Json, Path, State},
+    http::StatusCode,
+};
+use std::sync::Arc;
 
-// pub async fn list_tables(
-//     State(repo): State<Arc<TableRepository>>,
-//     Path(namespace): Path<String>,
-// ) -> Result<Json<Vec<String>>, (StatusCode, String)> {
-//     repo.list_all_tables(&namespace)
-//         .map(|tables| Json(tables.unwrap_or_default()))
-//         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
-// }
+pub async fn list_tables(
+    State(repo): State<Arc<TableRepository>>,
+    Path(namespace): Path<String>,
+) -> Result<Json<Vec<TableIdent>>, (StatusCode, String)> {
+    let id = NamespaceIdent::new(
+        namespace
+            .split('\u{1F}')
+            .map(|part| part.to_string())
+            .collect(),
+    );
+    repo.list_all_tables(&id)
+        .map(|tables| Json(tables.unwrap_or_default()))
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+}
 
-// pub async fn create_table(
-//     State(repo): State<Arc<TableRepository>>,
-//     Path(namespace): Path<String>,
-//     table: Json<TableData>,
-// ) -> Result<StatusCode, (StatusCode, String)> {
-//     repo.create_table(&namespace, &table)
-//         .map(|_| StatusCode::CREATED)
-//         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
-// }
-
-// pub async fn register_table(
-//     State(repo): State<Arc<TableRepository>>,
-//     Path(namespace): Path<String>,
-//     table: Json<TableData>,
-// ) -> Result<StatusCode, (StatusCode, String)> {
-//     repo.register_table(&namespace, &table)
-//         .map(|_| StatusCode::CREATED)
-//         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
-// }
+pub async fn create_table(
+    State(repo): State<Arc<TableRepository>>,
+    Path(namespace): Path<String>,
+    table: Json<TableCreation>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    let id = NamespaceIdent::new(
+        namespace
+            .split('\u{1F}')
+            .map(|part| part.to_string())
+            .collect(),
+    );
+    repo.create_table(&id, &table)
+        .map(|_| StatusCode::CREATED)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+}
 
 // pub async fn load_table(
 //     State(repo): State<Arc<TableRepository>>,

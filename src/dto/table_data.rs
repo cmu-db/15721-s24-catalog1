@@ -50,8 +50,6 @@ pub struct TableCreation {
 pub struct TableMetadata {
   pub table_uuid: String,
   pub location: Option<String>,
-  pub last_updated_ms: Option<i64>,
-  pub properties: Option<HashMap<String, String>>,
   pub file_urls: Option<Vec<String>>,
   pub columns: Option<Vec<ColumnData>>,
 }
