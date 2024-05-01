@@ -10,10 +10,6 @@ use std::collections::HashMap;
 pub struct Table {
     pub id: TableIdent,
     pub metadata: TableMetadata,
-    pub read_properties: Value,
-    pub write_properties: Value,
-    pub file_urls: Vec<String>,
-    pub columns: Vec<ColumnData>,
 }
 
 /// TableIdent represents the identifier of a table in the catalog.
@@ -56,7 +52,7 @@ pub struct TableMetadata {
   pub table_uuid: String,
   pub location: Option<String>,
   pub last_updated_ms: Option<i64>,
-  pub properties: HashMap<String, String>,
+  pub properties: Option<HashMap<String, String>>,
   pub file_urls: Option<Vec<String>>,
   pub columns: Option<Vec<ColumnData>>,
 }
