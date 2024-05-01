@@ -1,7 +1,6 @@
 use crate::dto::column_data::ColumnData;
 use crate::dto::namespace_data::NamespaceIdent;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use typed_builder::TypedBuilder;
 use std::collections::HashMap;
 
