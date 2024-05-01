@@ -34,8 +34,8 @@ pub async fn create_namespace(
     new_namespace: Json<NamespaceData>,
 ) -> Result<Json<NamespaceData>, (StatusCode, String)> {
     repo.create_namespace(
-        new_namespace.get_name(),
-        Some(new_namespace.get_properties()),
+        new_namespace.get_name().clone(),
+        Some(new_namespace.get_properties().clone()),
     )
     .map(|_| new_namespace)
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
