@@ -2,7 +2,7 @@ use crate::database::database::Database;
 use crate::dto::rename_request::TableRenameRequest;
 use crate::dto::column_data::ColumnData;
 use crate::dto::table_data::{TableIdent, TableCreation, Table, TableMetadata};
-use crate::dto::namespace_data::{NamespaceIdent};
+use crate::dto::namespace_data::{NamespaceIdent, NamespaceData};
 use std::io::{Error, ErrorKind};
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
@@ -23,7 +23,7 @@ impl TableRepository {
 
     pub fn create_table(&self, namespace: &NamespaceIdent, table_creation: &TableCreation) -> Result<(), Error> {
         let db = self.database.lock().unwrap();
-        match db.get("NamespaceData", namespace)? {
+        let namespace_data : NamespaceData = match db.get("NamespaceData", namespace)? {
             Some(data) => data,
             None => {
                 return Err(std::io::Error::new(
@@ -35,17 +35,17 @@ impl TableRepository {
 
         let table_id = TableIdent::new(namespace.clone(), table_creation.name.clone());
         let table_uuid = Uuid::new_v4().to_string(); 
-
+        
         let table_metadata = TableMetadata{
             table_uuid
         };
-
+        
         db.insert("TableData", &table_creation.name, &Table{id: table_id.clone(), metadata: table_metadata})?;
         let mut tables = db
             .get::<NamespaceIdent, Vec<TableIdent>>("TableNamespaceMap", namespace)
             .unwrap()
             .unwrap_or_else(|| vec![]);
-        
+
         tables.push(table_id.clone());
         let r_val = db.insert("TableNamespaceMap", namespace, &tables);
         r_val
