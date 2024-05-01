@@ -44,13 +44,12 @@ pub enum ErrorTypes {
 }
 
 impl std::fmt::Display for ErrorTypes {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ErrorTypes::BadRequest(msg) => write!(f, "Bad Request: {}", msg),
-            ErrorTypes::Unauthorized(msg) => write!(f, "Unauthorized: {}", msg),
-            ErrorTypes::ServiceUnavailable(msg) => write!(f, "Service Unavailable: {}", msg),
-            ErrorTypes::ServerError(msg) => write!(f, "Internal Server Error: {}", msg),
-        }
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      match self {
+          ErrorTypes::BadRequest(msg) => write!(f, "Bad Request: {}", msg),
+          ErrorTypes::Unauthorized(msg) => write!(f, "Unauthorized: {}", msg),
+          ErrorTypes::ServiceUnavailable(msg) => write!(f, "Service Unavailable: {}", msg),
+          ErrorTypes::ServerError(msg) => write!(f, "Internal Server Error: {}", msg),
+      }
     }
-  }
 }
