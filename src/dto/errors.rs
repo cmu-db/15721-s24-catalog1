@@ -52,4 +52,5 @@ impl std::fmt::Display for ErrorTypes {
             ErrorTypes::ServerError(msg) => write!(f, "Internal Server Error: {}", msg),
         }
     }
+  }
 }
