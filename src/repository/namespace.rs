@@ -14,7 +14,7 @@ impl NamespaceRepository {
         Self { database }
     }
 
-    pub fn list_all_namespaces(&self) -> io::Result<Vec<String>> {
+    pub fn list_all_namespaces(&self) -> io::Result<Vec<NamespaceIdent>> {
         let db = self.database.lock().unwrap();
         db.list_all_keys("NamespaceData")
             .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
@@ -22,42 +22,44 @@ impl NamespaceRepository {
 
     pub fn create_namespace(&self, name: NamespaceIdent, properties: Option<Value>) -> io::Result<()> {
         let namespace_data = NamespaceData {
-            name: name,
+            name: name.clone(),
             properties: properties.unwrap_or_else(|| json!({"last_modified_time": current_time()})),
         };
         let db = self.database.lock().unwrap();
         db.insert("NamespaceData", &name, &namespace_data)
     }
 
-    pub fn load_namespace(&self, name: &NamespaceIdent) -> io::Result<Option<NamespaceData>> {
-        let db = self.database.lock().unwrap();
-        db.get::<NamespaceIdent, NamespaceData>("NamespaceData", &name)
-    }
-
-    pub fn namespace_exists(&self, name: &NamespaceIdent) -> io::Result<bool> {
-        let db = self.database.lock().unwrap();
-        db.get::<NamespaceIdent, NamespaceData>("NamespaceData", &name)
-            .map(|data| data.is_some())
-    }
-
-    pub fn delete_namespace(&self, name: &str) -> io::Result<()> {
-        let db = self.database.lock().unwrap();
-        db.delete("NamespaceData", &name)
-    }
-
-    pub fn set_namespace_properties(&self, name: &NamespaceIdent, properties: Value) -> io::Result<()> {
-        if let Some(mut namespace_data) = self.load_namespace(name)? {
-            namespace_data.properties = properties;
-            let db = self.database.lock().unwrap();
-            db.update("NamespaceData", &name, &namespace_data)
-        } else {
-            Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                "Namespace not found",
-            ))
-        }
-    }
 }
+
+//     pub fn load_namespace(&self, name: &NamespaceIdent) -> io::Result<Option<NamespaceData>> {
+//         let db = self.database.lock().unwrap();
+//         db.get::<NamespaceIdent, NamespaceData>("NamespaceData", &name)
+//     }
+
+//     pub fn namespace_exists(&self, name: &NamespaceIdent) -> io::Result<bool> {
+//         let db = self.database.lock().unwrap();
+//         db.get::<NamespaceIdent, NamespaceData>("NamespaceData", &name)
+//             .map(|data| data.is_some())
+//     }
+
+//     pub fn delete_namespace(&self, name: &str) -> io::Result<()> {
+//         let db = self.database.lock().unwrap();
+//         db.delete("NamespaceData", &name)
+//     }
+
+//     pub fn set_namespace_properties(&self, name: &NamespaceIdent, properties: Value) -> io::Result<()> {
+//         if let Some(mut namespace_data) = self.load_namespace(name)? {
+//             namespace_data.properties = properties;
+//             let db = self.database.lock().unwrap();
+//             db.update("NamespaceData", &name, &namespace_data)
+//         } else {
+//             Err(io::Error::new(
+//                 io::ErrorKind::NotFound,
+//                 "Namespace not found",
+//             ))
+//         }
+//     }
+// }
 
 fn current_time() -> String {
     "current_time".to_string()
