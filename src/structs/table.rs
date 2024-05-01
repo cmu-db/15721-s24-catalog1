@@ -1,15 +1,10 @@
-use crate::table::Table;
 use crate::structs::error::{Error, ErrorKind, Result};
-use crate::structs::namespace::{Namespace, NamespaceIdent};
-use async_trait::async_trait;
-use serde_derive::{Deserialize, Serialize};
+use crate::dto::namespace_data::{NamespaceData, NamespaceIdent};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::mem::take;
 use std::ops::Deref;
-use typed_builder::TypedBuilder;
-use urlencoding::encode;
-use uuid::Uuid;
 
 
 /// TableIdent represents the identifier of a table in the catalog.
@@ -37,16 +32,4 @@ impl TableIdent {
     pub fn name(&self) -> &str {
         &self.name
     }
-}
-
-/// TableCreation represents the creation of a table in the catalog.
-#[derive(Debug, TypedBuilder)]
-pub struct TableCreation {
-    /// The name of the table.
-    pub name: String,
-    /// The schema of the table.
-    pub schema: Schema,
-    /// The properties of the table.
-    #[builder(default)]
-    pub properties: HashMap<String, String>,
 }
