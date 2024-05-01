@@ -37,20 +37,6 @@ impl TableIdent {
     pub fn name(&self) -> &str {
         &self.name
     }
-
-    /// Try to create table identifier from an iterator of string.
-    pub fn from_strs(iter: impl IntoIterator<Item = impl ToString>) -> Result<Self> {
-        let mut vec: Vec<String> = iter.into_iter().map(|s| s.to_string()).collect();
-        let table_name = vec.pop().ok_or_else(|| {
-            Error::new(ErrorKind::DataInvalid, "Table identifier can't be empty!")
-        })?;
-        let namespace_ident = NamespaceIdent::from_vec(vec)?;
-
-        Ok(Self {
-            namespace: namespace_ident,
-            name: table_name,
-        })
-    }
 }
 
 /// TableCreation represents the creation of a table in the catalog.
