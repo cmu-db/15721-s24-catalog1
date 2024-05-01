@@ -67,8 +67,8 @@ impl NamespaceRepository {
         };
 
         // Convert the properties to a mutable Map
-        let properties = namespace_data
-            .get_properties()
+        let mut p = namespace_data.get_properties().clone();
+        let properties = p
             .as_object_mut()
             .ok_or_else(|| io::Error::new(ErrorKind::Other, "Properties value is not an object"))?;
 

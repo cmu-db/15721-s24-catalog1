@@ -8,12 +8,12 @@ pub struct NamespaceData {
 }
 
 impl NamespaceData {
-    pub fn get_name(&self) -> NamespaceIdent {
-        self.name.clone()
+    pub fn get_name(&self) -> &NamespaceIdent {
+        &self.name
     }
 
-    pub fn get_properties(&self) -> Value {
-        self.properties.clone()
+    pub fn get_properties(&self) -> &Value {
+        &self.properties
     }
 }
 
