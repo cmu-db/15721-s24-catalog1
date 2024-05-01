@@ -227,7 +227,6 @@ impl TableRepository {
 //         assert!(repo.drop_table("namespace", "nonexistent").is_err());
 //     }
 //     */
-
 //     #[test]
 //     fn test_rename_table_not_found() {
 //         let db = Arc::new(Mutex::new(
@@ -278,7 +277,6 @@ impl TableRepository {
 //         assert!(repo.create_table("namespace", &table).is_err());
 //     }
 //     */
-
 //     #[test]
 //     fn test_load_table_empty_name() {
 //         let db = Arc::new(Mutex::new(

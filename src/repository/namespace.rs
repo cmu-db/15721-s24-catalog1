@@ -1,13 +1,12 @@
 use crate::database::database::Database;
 use crate::dto::namespace_data::{NamespaceData, NamespaceIdent};
-use serde_json::{json, Value};
-use std::io;
+use serde_json::{json, Map, Value};
+use std::io::{self, ErrorKind};
 use std::sync::{Arc, Mutex};
 
 pub struct NamespaceRepository {
     database: Arc<Mutex<Database>>,
 }
-
 
 impl NamespaceRepository {
     pub fn new(database: Arc<Mutex<Database>>) -> Self {
@@ -20,7 +19,11 @@ impl NamespaceRepository {
             .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
     }
 
-    pub fn create_namespace(&self, name: NamespaceIdent, properties: Option<Value>) -> io::Result<()> {
+    pub fn create_namespace(
+        &self,
+        name: NamespaceIdent,
+        properties: Option<Value>,
+    ) -> io::Result<()> {
         let namespace_data = NamespaceData {
             name: name,
             properties: properties.unwrap_or_else(|| json!({"last_modified_time": current_time()})),
@@ -45,17 +48,44 @@ impl NamespaceRepository {
         db.delete("NamespaceData", name)
     }
 
-    pub fn set_namespace_properties(&self, name: &NamespaceIdent, properties: Value) -> io::Result<()> {
-        if let Some(mut namespace_data) = self.load_namespace(name)? {
-            namespace_data.properties = properties;
-            let db = self.database.lock().unwrap();
-            db.update("NamespaceData", &name, &namespace_data)
-        } else {
-            Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                "Namespace not found",
-            ))
+    pub fn set_namespace_properties(
+        &self,
+        name: &NamespaceIdent,
+        removals: Vec<String>,
+        updates: Map<String, Value>,
+    ) -> io::Result<()> {
+        let db = self.database.lock().unwrap();
+        // Get the current properties
+        let mut namespace_data: NamespaceData = match db.get("NamespaceData", name)? {
+            Some(data) => data,
+            None => {
+                return Err(io::Error::new(
+                    ErrorKind::NotFound,
+                    format!("Namespace {} not found", name.0.join("\u{1F}")),
+                ))
+            }
+        };
+
+        // Convert the properties to a mutable Map
+        let properties = namespace_data
+            .get_properties()
+            .as_object_mut()
+            .ok_or_else(|| io::Error::new(ErrorKind::Other, "Properties value is not an object"))?;
+
+        // Remove properties
+        for key in removals {
+            properties.remove(&key);
         }
+
+        // Update properties
+        for (key, value) in updates {
+            properties.insert(key, value);
+        }
+
+        // Save the updated properties
+        db.update("NamespaceData", name, &namespace_data)?;
+
+        Ok(())
     }
 }
 

@@ -259,7 +259,6 @@ macro_rules! define_from_err {
     };
 }
 
-
 /// Helper macro to check arguments.
 ///
 ///

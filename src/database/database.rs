@@ -27,7 +27,10 @@ impl Database {
         Ok(Self { db: db.into() })
     }
 
-    pub fn list_all_keys<K: Serialize + for<'de> Deserialize<'de>>(&self, cf: &str) -> Result<Vec<K>, io::Error> {
+    pub fn list_all_keys<K: Serialize + for<'de> Deserialize<'de>>(
+        &self,
+        cf: &str,
+    ) -> Result<Vec<K>, io::Error> {
         let cf_handle = self.db.cf_handle(cf).ok_or_else(|| {
             io::Error::new(
                 ErrorKind::NotFound,
@@ -45,7 +48,12 @@ impl Database {
         Ok(keys)
     }
 
-    pub fn insert<K: Serialize, V: Serialize>(&self, cf: &str, key: &K, value: &V) -> Result<(), io::Error> {
+    pub fn insert<K: Serialize, V: Serialize>(
+        &self,
+        cf: &str,
+        key: &K,
+        value: &V,
+    ) -> Result<(), io::Error> {
         let cf_handle = self.db.cf_handle(cf).ok_or_else(|| {
             io::Error::new(
                 ErrorKind::NotFound,
@@ -54,8 +62,8 @@ impl Database {
         })?;
         let value = serde_json::to_vec(value)
             .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
-        let key_bytes = serde_json::to_vec(key)
-            .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
+        let key_bytes =
+            serde_json::to_vec(key).map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
         self.db
             .put_cf(cf_handle, key_bytes, &value)
             .map_err(|e| io::Error::new(ErrorKind::Other, e))?;
@@ -73,8 +81,8 @@ impl Database {
                 format!("Column family {} not found", cf),
             )
         })?;
-        let key_bytes = serde_json::to_vec(key)
-            .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
+        let key_bytes =
+            serde_json::to_vec(key).map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
         let value = self
             .db
             .get_cf(cf_handle, &key_bytes)
@@ -87,24 +95,32 @@ impl Database {
             None => Ok(None),
         }
     }
-    
 
-    pub fn delete<K: for<'de> Deserialize<'de> + Serialize>(&self, cf: &str, key: &K) -> Result<(), io::Error> {
+    pub fn delete<K: for<'de> Deserialize<'de> + Serialize>(
+        &self,
+        cf: &str,
+        key: &K,
+    ) -> Result<(), io::Error> {
         let cf_handle = self.db.cf_handle(cf).ok_or_else(|| {
             io::Error::new(
                 ErrorKind::NotFound,
                 format!("Column family {} not found", cf),
             )
         })?;
-        let key_bytes = serde_json::to_vec(key)
-            .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
+        let key_bytes =
+            serde_json::to_vec(key).map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
         self.db
             .delete_cf(cf_handle, key_bytes)
             .map_err(|e| io::Error::new(ErrorKind::Other, e))?;
         Ok(())
     }
 
-    pub fn update<K: Serialize, V: Serialize>(&self, cf: &str, key: &K, value: &V) -> Result<(), io::Error> {
+    pub fn update<K: Serialize, V: Serialize>(
+        &self,
+        cf: &str,
+        key: &K,
+        value: &V,
+    ) -> Result<(), io::Error> {
         let cf_handle = self.db.cf_handle(cf).ok_or_else(|| {
             io::Error::new(
                 ErrorKind::NotFound,
@@ -113,8 +129,8 @@ impl Database {
         })?;
         let value = serde_json::to_vec(value)
             .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
-        let key_bytes = serde_json::to_vec(key)
-            .map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
+        let key_bytes =
+            serde_json::to_vec(key).map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))?;
         self.db
             .put_cf(cf_handle, key_bytes, &value)
             .map_err(|e| io::Error::new(ErrorKind::Other, e))?;

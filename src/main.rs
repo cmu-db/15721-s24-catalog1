@@ -4,8 +4,8 @@ mod dto;
 mod handlers;
 mod repository;
 mod routes;
-mod tests;
 mod structs;
+mod tests;
 
 use config::parameters;
 use database::database::Database;

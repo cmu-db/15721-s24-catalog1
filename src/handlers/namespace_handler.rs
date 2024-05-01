@@ -1,10 +1,10 @@
-use crate::dto::namespace_data::{NamespaceIdent, NamespaceData};
+use crate::dto::namespace_data::{NamespaceData, NamespaceIdent};
 use crate::repository::namespace::NamespaceRepository;
 use axum::{
     extract::{Json, Path, State},
     http::StatusCode,
 };
-use serde_json::Value;
+use serde_json::{Value, Map};
 use std::sync::Arc;
 
 /*
@@ -37,7 +37,12 @@ pub async fn load_namespace_metadata(
     State(repo): State<Arc<NamespaceRepository>>,
     Path(namespace): Path<String>,
 ) -> Result<Json<NamespaceData>, (StatusCode, String)> {
-    let id  = NamespaceIdent::new(namespace.split('\u{1F}').map(|part| part.to_string()).collect());
+    let id = NamespaceIdent::new(
+        namespace
+            .split('\u{1F}')
+            .map(|part| part.to_string())
+            .collect(),
+    );
     match repo.load_namespace(&id) {
         Ok(Some(metadata)) => Ok(Json(metadata)),
         Ok(None) => Err((
@@ -52,7 +57,12 @@ pub async fn namespace_exists(
     State(repo): State<Arc<NamespaceRepository>>,
     Path(namespace): Path<String>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    let id  = NamespaceIdent::new(namespace.split('\u{1F}').map(|part| part.to_string()).collect());
+    let id = NamespaceIdent::new(
+        namespace
+            .split('\u{1F}')
+            .map(|part| part.to_string())
+            .collect(),
+    );
     repo.namespace_exists(&id)
         .map(|exists| {
             if exists {
@@ -68,7 +78,12 @@ pub async fn drop_namespace(
     State(repo): State<Arc<NamespaceRepository>>,
     Path(namespace): Path<String>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    let id  = NamespaceIdent::new(namespace.split('\u{1F}').map(|part| part.to_string()).collect());
+    let id = NamespaceIdent::new(
+        namespace
+            .split('\u{1F}')
+            .map(|part| part.to_string())
+            .collect(),
+    );
     repo.delete_namespace(&id)
         .map(|_| StatusCode::NO_CONTENT)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
@@ -77,10 +92,16 @@ pub async fn drop_namespace(
 pub async fn set_namespace_properties(
     State(repo): State<Arc<NamespaceRepository>>,
     Path(namespace): Path<String>,
-    properties: Json<Value>,
+    removals: Vec<String>,
+    updates: Map<String, Value>
 ) -> Result<StatusCode, (StatusCode, String)> {
-    let id  = NamespaceIdent::new(namespace.split('\u{1F}').map(|part| part.to_string()).collect());
-    repo.set_namespace_properties(&id, properties.0)
+    let id = NamespaceIdent::new(
+        namespace
+            .split('\u{1F}')
+            .map(|part| part.to_string())
+            .collect(),
+    );
+    repo.set_namespace_properties(&id, removals, updates)
         .map(|_| StatusCode::OK)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
 }
@@ -252,7 +273,6 @@ pub async fn set_namespace_properties(
 //         );
 //     }
 //     */
-
 //     #[tokio::test]
 //     async fn test_set_namespace_properties_not_found() {
 //         let repo = Arc::new(NamespaceRepository::new(Arc::new(Mutex::new(
