@@ -39,7 +39,7 @@ impl TableIdent {
 }
 
 
-#[derive(Debug, TypedBuilder)]
+#[derive(Serialize, Deserialize, Debug, TypedBuilder)]
 pub struct TableCreation {
     /// The name of the table.
     pub name: String,
