@@ -45,7 +45,7 @@ impl Database {
         Ok(keys)
     }
 
-    pub fn insert<V: Serialize>(&self, cf: &str, key: &str, value: &V) -> Result<(), io::Error> {
+    pub fn insert<K: Serialize, V: Serialize>(&self, cf: &str, key: &K, value: &V) -> Result<(), io::Error> {
         let cf_handle = self.db.cf_handle(cf).ok_or_else(|| {
             io::Error::new(
                 ErrorKind::NotFound,
