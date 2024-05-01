@@ -15,10 +15,16 @@ use std::sync::Arc;
 */
 pub async fn list_namespaces(
     State(repo): State<Arc<NamespaceRepository>>,
-) -> Result<Json<Vec<NamespaceIdent>>, (StatusCode, String)> {
-    repo.list_all_namespaces()
-        .map(Json)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+) -> Result<Json<Value>, (StatusCode, String)> {
+    let namespaces = repo
+        .list_all_namespaces()
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))?;
+
+    let json_object = json!({
+        "namespaces": namespaces
+    });
+
+    Ok(Json(json_object))
 }
 
 pub async fn create_namespace(

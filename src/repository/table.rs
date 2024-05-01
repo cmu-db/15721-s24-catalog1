@@ -1,91 +1,95 @@
-use crate::database::database::Database;
-use crate::dto::rename_request::TableRenameRequest;
-use crate::dto::table_data::TableData;
-use std::io::{Error, ErrorKind};
-use std::sync::{Arc, Mutex};
+// use crate::database::database::Database;
+// use crate::dto::rename_request::TableRenameRequest;
+// use crate::dto::table_data::TableData;
+// use std::io::{Error, ErrorKind};
+// use std::sync::{Arc, Mutex};
 
-pub struct TableRepository {
-    database: Arc<Mutex<Database>>,
-}
+// pub struct TableRepository {
+//     database: Arc<Mutex<Database>>,
+// }
 
-impl TableRepository {
-    pub fn new(database: Arc<Mutex<Database>>) -> Self {
-        Self { database }
-    }
+// impl TableRepository {
+//     pub fn new(database: Arc<Mutex<Database>>) -> Self {
+//         Self { database }
+//     }
 
-    pub fn list_all_tables(&self, namespace: String) -> Result<Option<Vec<String>>, Error> {
-        let db = self.database.lock().unwrap();
-        db.get::<String, Vec<String>>("TableNamespaceMap", &namespace)
-    }
+//     pub fn list_all_tables(&self, namespace: &str) -> Result<Option<Vec<String>>, Error> {
+//         let db = self.database.lock().unwrap();
+//         db.get::<Vec<String>>("TableNamespaceMap", namespace)
+//     }
 
-    pub fn create_table(&self, namespace: String, table: &TableData) -> Result<(), Error> {
-        let db = self.database.lock().unwrap();
-        db.insert("TableData", &table.name, table)?;
-        let mut tables = db
-            .get::<String, Vec<String>>("TableNamespaceMap", &namespace)
-            .unwrap()
-            .unwrap_or_else(|| vec![]);
-        tables.push(table.name.clone());
-        let r_val = db.insert("TableNamespaceMap", &namespace, &tables);
-        r_val
-    }
+//     pub fn create_table(&self, namespace: &str, table: &TableData) -> Result<(), Error> {
+//         let db = self.database.lock().unwrap();
+//         db.insert("TableData", &table.name, table)?;
+//         let mut tables = db
+//             .get::<Vec<String>>("TableNamespaceMap", namespace)
+//             .unwrap()
+//             .unwrap_or_else(|| vec![]);
+//         tables.push(table.name.clone());
+//         let r_val = db.insert("TableNamespaceMap", namespace, &tables);
+//         r_val
+//     }
 
-    pub fn load_table(
-        &self,
-        namespace: String,
-        table_name: String,
-    ) -> Result<Option<TableData>, Error> {
-        // Check if the table is in the given namespace
-        let tables_in_namespace = self.list_all_tables(namespace)?;
-        if let Some(tables) = tables_in_namespace {
-            if !tables.contains(&table_name.to_string()) {
-                return Err(Error::new(
-                    ErrorKind::NotFound,
-                    "Table not found in the given namespace",
-                ));
-            }
-        }
-        let db = self.database.lock().unwrap();
-        // If the table is in the namespace, get the table data
-        db.get::<String, TableData>("TableData", &table_name)
-    }
+//     pub fn register_table(&self, namespace: &str, table: &TableData) -> Result<(), Error> {
+//         self.create_table(namespace, table)
+//     }
 
-    pub fn drop_table(&self, namespace: String, table_name: String) -> Result<(), Error> {
-        let db = self.database.lock().unwrap();
-        db.delete("TableData", &table_name)?;
-        let mut tables = db
-            .get::<String, Vec<String>>("TableNamespaceMap", &namespace)
-            .unwrap()
-            .unwrap();
-        tables.retain(|name| name != &table_name);
-        db.insert("TableNamespaceMap", &namespace, &tables)
-    }
+//     pub fn load_table(
+//         &self,
+//         namespace: &str,
+//         table_name: &str,
+//     ) -> Result<Option<TableData>, Error> {
+//         // Check if the table is in the given namespace
+//         let tables_in_namespace = self.list_all_tables(namespace)?;
+//         if let Some(tables) = tables_in_namespace {
+//             if !tables.contains(&table_name.to_string()) {
+//                 return Err(Error::new(
+//                     ErrorKind::NotFound,
+//                     "Table not found in the given namespace",
+//                 ));
+//             }
+//         }
+//         let db = self.database.lock().unwrap();
+//         // If the table is in the namespace, get the table data
+//         db.get::<TableData>("TableData", table_name)
+//     }
 
-    // for the ?? route
-    pub fn insert_table(&self, namespace: String, table: &TableData) -> Result<(), Error> {
-        self.create_table(namespace, table)
-    }
+//     pub fn drop_table(&self, namespace: &str, table_name: &str) -> Result<(), Error> {
+//         let db = self.database.lock().unwrap();
+//         db.delete("TableData", table_name)?;
+//         let mut tables = db
+//             .get::<Vec<String>>("TableNamespaceMap", namespace)
+//             .unwrap()
+//             .unwrap();
+//         tables.retain(|name| name != table_name);
+//         db.insert("TableNamespaceMap", namespace, &tables)
+//     }
 
-    pub fn table_exists(&self, namespace: String, table_name: String) -> Result<bool, Error> {
-        let table = self.load_table(namespace, table_name)?;
-        Ok(table.is_some())
-    }
+//     // for the ?? route
+//     pub fn insert_table(&self, namespace: &str, table: &TableData) -> Result<(), Error> {
+//         self.create_table(namespace, table)
+//     }
 
-    pub fn rename_table(&self, rename_request: &TableRenameRequest) -> Result<(), Error> {
-        let namespace = rename_request.namespace;
-        let old_name = rename_request.old_name;
-        let new_name = rename_request.new_name;
-        let table = self
-            .load_table(namespace, old_name)?
-            .ok_or_else(|| Error::new(ErrorKind::NotFound, "Table not found"))?;
-        let mut new_table = table.clone();
-        new_table.name = new_name.clone();
-        self.drop_table(namespace, old_name)?;
-        self.create_table(namespace, &new_table)
-    }
-}
+//     pub fn table_exists(&self, namespace: &str, table_name: &str) -> Result<bool, Error> {
+//         let table = self.load_table(namespace, table_name)?;
+//         Ok(table.is_some())
+//     }
 
-// todo: check commented tests
+//     pub fn rename_table(&self, rename_request: &TableRenameRequest) -> Result<(), Error> {
+//         let namespace = &rename_request.namespace;
+//         let old_name = &rename_request.old_name;
+//         let new_name = &rename_request.new_name;
+//         let table = self
+//             .load_table(namespace, old_name)?
+//             .ok_or_else(|| Error::new(ErrorKind::NotFound, "Table not found"))?;
+//         let mut new_table = table.clone();
+//         new_table.name = new_name.clone();
+//         self.drop_table(namespace, old_name)?;
+//         self.create_table(namespace, &new_table)
+//     }
+// }
+
+// // todo: check commented tests
 // #[cfg(test)]
 // mod tests {
 //     use super::*;
