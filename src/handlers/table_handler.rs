@@ -39,16 +39,23 @@ pub async fn create_table(
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
 }
 
-// pub async fn load_table(
-//     State(repo): State<Arc<TableRepository>>,
-//     Path((namespace, table)): Path<(String, String)>,
-// ) -> Result<Json<TableData>, (StatusCode, String)> {
-//     match repo.load_table(&namespace, &table) {
-//         Ok(Some(table_data)) => Ok(Json(table_data)),
-//         Ok(None) => Err((StatusCode::NOT_FOUND, format!("Table {} not found", table))),
-//         Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
-//     }
-// }
+pub async fn load_table(
+    State(repo): State<Arc<TableRepository>>,
+    Path((namespace, table)): Path<(String, String)>,
+) -> Result<Json<Table>, (StatusCode, String)> {
+    let id = NamespaceIdent::new(
+        namespace
+            .split('\u{1F}')
+            .map(|part| part.to_string())
+            .collect(),
+    );
+    
+    match repo.load_table(&id, table.clone()) {
+        Ok(Some(table_data)) => Ok(Json(table_data)),
+        Ok(None) => Err((StatusCode::NOT_FOUND, format!("Table {} not found", table.clone()))),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
+    }
+}
 
 // pub async fn delete_table(
 //     State(repo): State<Arc<TableRepository>>,

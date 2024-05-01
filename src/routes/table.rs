@@ -18,14 +18,10 @@ pub fn routes(db: Arc<Mutex<Database>>) -> Router {
             "/namespaces/:namespace/tables",
             post(table_handler::create_table),
         )
-//         .route(
-//             "/namespaces/:namespace/register",
-//             post(table_handler::register_table),
-//         )
-//         .route(
-//             "/namespaces/:namespace/tables/:table",
-//             get(table_handler::load_table),
-//         )
+        .route(
+            "/namespaces/:namespace/tables/:table",
+            get(table_handler::load_table),
+        )
 //         .route(
 //             "/namespaces/:namespace/tables/:table",
 //             delete(table_handler::delete_table),

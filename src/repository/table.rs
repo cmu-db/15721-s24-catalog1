@@ -44,7 +44,7 @@ impl TableRepository {
             .get::<NamespaceIdent, Vec<TableIdent>>("TableNamespaceMap", namespace)
             .unwrap()
             .unwrap_or_else(|| vec![]);
-        // check  if table already exists in the namespace
+
         if tables.contains(&table_id) {
             return Err(std::io::Error::new(
                 ErrorKind::AlreadyExists,
@@ -52,32 +52,24 @@ impl TableRepository {
             ))
         }
 
-        db.insert("TableData", &table_creation.name, &Table{id: table_id.clone(), metadata: table_metadata})?;
+        db.insert("TableData", &table_id, &Table{id: table_id.clone(), metadata: table_metadata})?;
         tables.push(table_id.clone());
         let r_val = db.insert("TableNamespaceMap", namespace, &tables);
         r_val
     }
 
 
-    // pub fn load_table(
-    //     &self,
-    //     namespace: &str,
-    //     table_name: &str,
-    // ) -> Result<Option<TableData>, Error> {
-    //     // Check if the table is in the given namespace
-    //     let tables_in_namespace = self.list_all_tables(namespace)?;
-    //     if let Some(tables) = tables_in_namespace {
-    //         if !tables.contains(&table_name.to_string()) {
-    //             return Err(Error::new(
-    //                 ErrorKind::NotFound,
-    //                 "Table not found in the given namespace",
-    //             ));
-    //         }
-    //     }
-    //     let db = self.database.lock().unwrap();
-    //     // If the table is in the namespace, get the table data
-    //     db.get::<TableData>("TableData", table_name)
-    // }
+    pub fn load_table(
+        &self,
+        namespace: &NamespaceIdent,
+        table_name: String,
+    ) -> Result<Option<Table>, Error> {
+        // Check if the table is in the given namespace
+        let table_id = TableIdent::new(namespace.clone(), table_name.clone());
+        let db = self.database.lock().unwrap();
+        // If the table is in the namespace, get the table data
+        db.get::<TableIdent, Table>("TableData", &table_id)
+    }
 
     // pub fn drop_table(&self, namespace: &str, table_name: &str) -> Result<(), Error> {
     //     let db = self.database.lock().unwrap();
@@ -88,11 +80,6 @@ impl TableRepository {
     //         .unwrap();
     //     tables.retain(|name| name != table_name);
     //     db.insert("TableNamespaceMap", namespace, &tables)
-    // }
-
-    // // for the ?? route
-    // pub fn insert_table(&self, namespace: &str, table: &TableData) -> Result<(), Error> {
-    //     self.create_table(namespace, table)
     // }
 
     // pub fn table_exists(&self, namespace: &str, table_name: &str) -> Result<bool, Error> {
