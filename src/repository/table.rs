@@ -40,12 +40,19 @@ impl TableRepository {
             table_uuid
         };
         
-        db.insert("TableData", &table_creation.name, &Table{id: table_id.clone(), metadata: table_metadata})?;
         let mut tables = db
             .get::<NamespaceIdent, Vec<TableIdent>>("TableNamespaceMap", namespace)
             .unwrap()
             .unwrap_or_else(|| vec![]);
+        // check  if table already exists in the namespace
+        if tables.contains(&table_id) {
+            return Err(std::io::Error::new(
+                ErrorKind::AlreadyExists,
+                format!("Table {} already exists in namespace {}", table_creation.name, namespace.clone().0.join("\u{1F}")),
+            ))
+        }
 
+        db.insert("TableData", &table_creation.name, &Table{id: table_id.clone(), metadata: table_metadata})?;
         tables.push(table_id.clone());
         let r_val = db.insert("TableNamespaceMap", namespace, &tables);
         r_val
