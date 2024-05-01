@@ -1,5 +1,7 @@
 use crate::dto::namespace_data::{NamespaceData, NamespaceIdent};
+use crate::dto::set_namespace_properties_req::SetNamespacePropertiesRequest;
 use crate::repository::namespace::NamespaceRepository;
+
 use axum::{
     extract::{Json, Path, State},
     http::StatusCode,
@@ -98,8 +100,7 @@ pub async fn drop_namespace(
 pub async fn set_namespace_properties(
     State(repo): State<Arc<NamespaceRepository>>,
     Path(namespace): Path<String>,
-    removals: Vec<String>,
-    updates: Map<String, Value>
+    request_body: Json<SetNamespacePropertiesRequest>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     let id = NamespaceIdent::new(
         namespace
@@ -107,9 +108,13 @@ pub async fn set_namespace_properties(
             .map(|part| part.to_string())
             .collect(),
     );
-    repo.set_namespace_properties(&id, removals, updates)
-        .map(|_| StatusCode::OK)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+    repo.set_namespace_properties(
+        &id,
+        request_body.removals.clone(),
+        request_body.updates.clone(),
+    )
+    .map(|_| StatusCode::OK)
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
 }
 
 // todo: check commented tests
