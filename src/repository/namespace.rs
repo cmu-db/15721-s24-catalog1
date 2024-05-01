@@ -14,7 +14,7 @@ impl NamespaceRepository {
         Self { database }
     }
 
-    pub fn list_all_namespaces(&self) -> io::Result<Vec<String>> {
+    pub fn list_all_namespaces(&self) -> io::Result<Vec<NamespaceIdent>> {
         let db = self.database.lock().unwrap();
         db.list_all_keys("NamespaceData")
             .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))

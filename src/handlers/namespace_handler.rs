@@ -1,4 +1,4 @@
-use crate::dto::namespace_data::NamespaceData;
+use crate::dto::namespace_data::{NamespaceIdent, NamespaceData};
 use crate::repository::namespace::NamespaceRepository;
 use axum::{
     extract::{Json, Path, State},
@@ -15,7 +15,7 @@ use std::sync::Arc;
 */
 pub async fn list_namespaces(
     State(repo): State<Arc<NamespaceRepository>>,
-) -> Result<Json<Vec<String>>, (StatusCode, String)> {
+) -> Result<Json<Vec<NamespaceIdent>>, (StatusCode, String)> {
     repo.list_all_namespaces()
         .map(Json)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
@@ -37,7 +37,8 @@ pub async fn load_namespace_metadata(
     State(repo): State<Arc<NamespaceRepository>>,
     Path(namespace): Path<String>,
 ) -> Result<Json<NamespaceData>, (StatusCode, String)> {
-    match repo.load_namespace(namespace.as_str()) {
+    let id  = NamespaceIdent::new(namespace.split('\u{1F}').map(|part| part.to_string()).collect());
+    match repo.load_namespace(&id) {
         Ok(Some(metadata)) => Ok(Json(metadata)),
         Ok(None) => Err((
             StatusCode::NOT_FOUND,
