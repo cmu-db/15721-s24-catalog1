@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::repository::namespace::Namespace;
+use crate::dto::namespace_data::{NamespaceIdent};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Properties(pub std::collections::HashMap<String, String>);
@@ -7,7 +7,7 @@ pub struct Properties(pub std::collections::HashMap<String, String>);
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct CreateNamespaceRequest {
-    pub namespace: Namespace,
+    pub namespace: NamespaceIdent,
     // the properties field is optional
     #[serde(skip_serializing_if = "Option::is_none")]
     pub properties: Option<Properties>,
