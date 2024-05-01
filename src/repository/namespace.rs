@@ -48,11 +48,6 @@ impl NamespaceRepository {
             .map(|data| data.is_some())
     }
 
-    pub fn delete_namespace(&self, name: &NamespaceIdent) -> io::Result<()> {
-        let db = self.database.lock().unwrap();
-        db.delete("NamespaceData", name)
-    }
-
     pub fn set_namespace_properties(
         &self,
         name: &NamespaceIdent,
@@ -92,14 +87,12 @@ impl NamespaceRepository {
 
         Ok(())
     }
-
 }
 
 //     pub fn load_namespace(&self, name: &NamespaceIdent) -> io::Result<Option<NamespaceData>> {
 //         let db = self.database.lock().unwrap();
 //         db.get::<NamespaceIdent, NamespaceData>("NamespaceData", &name)
 //     }
-
 
 //     pub fn delete_namespace(&self, name: &str) -> io::Result<()> {
 //         let db = self.database.lock().unwrap();
