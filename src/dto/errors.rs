@@ -52,4 +52,5 @@ impl std::fmt::Display for ErrorTypes {
       ErrorTypes::ServiceUnavailable(msg) => write!(f, "Service Unavailable: {}", msg),
       ErrorTypes::ServerError(msg) => write!(f, "Internal Server Error: {}", msg),
     }
+  }
 }
