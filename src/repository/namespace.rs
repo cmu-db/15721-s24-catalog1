@@ -84,8 +84,15 @@ impl NamespaceRepository {
         let props = Value::Object(properties.clone());
         let name_copy = name.clone();
         // Save the updated properties
-        db.update("NamespaceData", &name, &NamespaceData{name: name_copy, properties: props })?;
-       
+        db.update(
+            "NamespaceData",
+            &name,
+            &NamespaceData {
+                name: name_copy,
+                properties: props,
+            },
+        )?;
+
         Ok(())
     }
 }
