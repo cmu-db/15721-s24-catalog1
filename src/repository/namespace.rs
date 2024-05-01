@@ -50,13 +50,13 @@ impl NamespaceRepository {
 
     pub fn set_namespace_properties(
         &self,
-        name: &NamespaceIdent,
+        name: NamespaceIdent,
         removals: Vec<String>,
         updates: Map<String, Value>,
     ) -> io::Result<()> {
         let db = self.database.lock().unwrap();
         // Get the current properties
-        let mut namespace_data: NamespaceData = match db.get("NamespaceData", name)? {
+        let namespace_data: NamespaceData = match db.get("NamespaceData", &name)? {
             Some(data) => data,
             None => {
                 return Err(io::Error::new(
@@ -81,10 +81,11 @@ impl NamespaceRepository {
         for (key, value) in updates {
             properties.insert(key, value);
         }
-
+        let props = Value::Object(properties.clone());
+        let name_copy = name.clone();
         // Save the updated properties
-        db.update("NamespaceData", name, &namespace_data)?;
-
+        db.update("NamespaceData", &name, &NamespaceData{name: name_copy, properties: props })?;
+       
         Ok(())
     }
 }

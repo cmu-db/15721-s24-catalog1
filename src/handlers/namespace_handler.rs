@@ -6,7 +6,7 @@ use axum::{
     extract::{Json, Path, State},
     http::StatusCode,
 };
-use serde_json::{json, Map, Value};
+use serde_json::{json, Value};
 use std::sync::Arc;
 
 /*
@@ -109,7 +109,7 @@ pub async fn set_namespace_properties(
             .collect(),
     );
     repo.set_namespace_properties(
-        &id,
+        id,
         request_body.removals.clone(),
         request_body.updates.clone(),
     )
