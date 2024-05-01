@@ -29,6 +29,35 @@ impl NamespaceRepository {
         db.insert("NamespaceData", &name, &namespace_data)
     }
 
+    pub fn delete_namespace(&self, name: &NamespaceIdent) -> io::Result<()> {
+        let db = self.database.lock().unwrap();
+        db.delete("NamespaceData", name)
+    }
+
+    pub fn load_namespace(&self, name: &NamespaceIdent) -> io::Result<Option<NamespaceData>> {
+        let db = self.database.lock().unwrap();
+        db.get::<NamespaceIdent, NamespaceData>("NamespaceData", &name)
+    }
+
+    pub fn namespace_exists(&self, name: &NamespaceIdent) -> io::Result<bool> {
+        let db = self.database.lock().unwrap();
+        db.get::<NamespaceIdent, NamespaceData>("NamespaceData", &name)
+            .map(|data| data.is_some())
+    }
+
+    pub fn set_namespace_properties(&self, name: &NamespaceIdent, properties: Value) -> io::Result<()> {
+        if let Some(mut namespace_data) = self.load_namespace(name)? {
+            namespace_data.properties = properties;
+            let db = self.database.lock().unwrap();
+            db.update("NamespaceData", &name, &namespace_data)
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Namespace not found",
+            ))
+        }
+    }
+
 }
 
 //     pub fn load_namespace(&self, name: &NamespaceIdent) -> io::Result<Option<NamespaceData>> {
@@ -36,11 +65,6 @@ impl NamespaceRepository {
 //         db.get::<NamespaceIdent, NamespaceData>("NamespaceData", &name)
 //     }
 
-//     pub fn namespace_exists(&self, name: &NamespaceIdent) -> io::Result<bool> {
-//         let db = self.database.lock().unwrap();
-//         db.get::<NamespaceIdent, NamespaceData>("NamespaceData", &name)
-//             .map(|data| data.is_some())
-//     }
 
 //     pub fn delete_namespace(&self, name: &str) -> io::Result<()> {
 //         let db = self.database.lock().unwrap();

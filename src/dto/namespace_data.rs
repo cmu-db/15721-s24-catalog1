@@ -25,3 +25,9 @@ impl NamespaceData {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct NamespaceIdent(Vec<String>);
 
+impl NamespaceIdent{
+    pub fn new(id: Vec<String>) -> NamespaceIdent{
+        NamespaceIdent(id)
+    }
+}
+
