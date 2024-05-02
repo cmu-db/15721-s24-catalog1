@@ -89,12 +89,12 @@ pub async fn table_exists(
     }
 }
 
-// pub async fn rename_table(
-//     State(repo): State<Arc<TableRepository>>,
-//     request: Json<TableRenameRequest>,
-// ) -> Result<StatusCode, (StatusCode, String)> {
-//     repo.rename_table(&request)
-//         .map(|_| StatusCode::OK)
-//         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
-// }
+pub async fn rename_table(
+    State(repo): State<Arc<TableRepository>>,
+    request: Json<TableRenameRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    repo.rename_table(&request)
+        .map(|_| StatusCode::OK)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+}
 

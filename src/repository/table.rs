@@ -64,7 +64,6 @@ impl TableRepository {
         namespace: &NamespaceIdent,
         table_name: String,
     ) -> Result<Option<Table>, Error> {
-        // Check if the table is in the given namespace
         let table_id = TableIdent::new(namespace.clone(), table_name.clone());
         let db = self.database.lock().unwrap();
         // If the table is in the namespace, get the table data
@@ -88,17 +87,19 @@ impl TableRepository {
         Ok(table.is_some())
     }
 
-    // pub fn rename_table(&self, rename_request: &TableRenameRequest) -> Result<(), Error> {
-    //     let namespace = &rename_request.namespace;
-    //     let old_name = &rename_request.old_name;
-    //     let new_name = &rename_request.new_name;
-    //     let table = self
-    //         .load_table(namespace, old_name)?
-    //         .ok_or_else(|| Error::new(ErrorKind::NotFound, "Table not found"))?;
-    //     let mut new_table = table.clone();
-    //     new_table.id.name = new_name.clone();
-    //     self.drop_table(namespace, old_name)?;
-    //     self.create_table(namespace, &new_table)
-    // }
+    pub fn rename_table(&self, rename_request: &TableRenameRequest) -> Result<(), Error> {
+        let source = rename_request.source.clone();
+        let destination = rename_request.destination.clone();
+        let namespace = source.namespace.clone();
+        let table = self
+            .load_table(&namespace, source.name.clone())?
+            .ok_or_else(|| Error::new(ErrorKind::NotFound, "Table not found"))?;
+        
+        let mut new_table = table.clone();
+        new_table.id = destination.clone();
+
+        self.drop_table(&namespace, source.name.clone())?;
+        self.create_table(&destination.namespace.clone(), &TableCreation{name: destination.name.clone()})
+    }
 }
 
