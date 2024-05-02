@@ -59,8 +59,6 @@ mod tests {
         assert_eq!(*namespace_data.get_properties(), properties);
     }
 
-
-
     #[test]
     fn test_namespace_ident_serde() {
         let id = vec!["test".to_string()];
@@ -88,7 +86,10 @@ mod tests {
 
         // Serialize
         let serialized = serde_json::to_string(&namespace_data).unwrap();
-        assert_eq!(serialized, r#"{"name":["test"],"properties":{"key":"value"}}"#);
+        assert_eq!(
+            serialized,
+            r#"{"name":["test"],"properties":{"key":"value"}}"#
+        );
 
         // Deserialize
         let deserialized: NamespaceData = serde_json::from_str(&serialized).unwrap();

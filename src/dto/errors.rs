@@ -89,8 +89,6 @@ mod tests {
         assert!(iceberg_err.error.stack.is_none());
     }
 
-
-
     #[test]
     fn test_error_model_deserialization() {
         let json_str = r#"{
@@ -108,20 +106,32 @@ mod tests {
         assert!(error_model.stack.is_none());
     }
 
-
-
     #[test]
     fn test_error_types_display() {
         let bad_request = ErrorTypes::BadRequest("Invalid request body".to_string());
         let unauthorized = ErrorTypes::Unauthorized("Missing authentication token".to_string());
-        let service_unavailable = ErrorTypes::ServiceUnavailable("Server is under maintenance".to_string());
+        let service_unavailable =
+            ErrorTypes::ServiceUnavailable("Server is under maintenance".to_string());
         let server_error = ErrorTypes::ServerError("Internal server error".to_string());
-        let namespace_not_found = ErrorTypes::NamespaceNotFound("Namespace 'test' not found".to_string());
+        let namespace_not_found =
+            ErrorTypes::NamespaceNotFound("Namespace 'test' not found".to_string());
 
         assert_eq!(bad_request.to_string(), "Bad Request: Invalid request body");
-        assert_eq!(unauthorized.to_string(), "Unauthorized: Missing authentication token");
-        assert_eq!(service_unavailable.to_string(), "Service Unavailable: Server is under maintenance");
-        assert_eq!(server_error.to_string(), "Internal Server Error: Internal server error");
-        assert_eq!(namespace_not_found.to_string(), "Namespace Not Found: Namespace 'test' not found");
+        assert_eq!(
+            unauthorized.to_string(),
+            "Unauthorized: Missing authentication token"
+        );
+        assert_eq!(
+            service_unavailable.to_string(),
+            "Service Unavailable: Server is under maintenance"
+        );
+        assert_eq!(
+            server_error.to_string(),
+            "Internal Server Error: Internal server error"
+        );
+        assert_eq!(
+            namespace_not_found.to_string(),
+            "Namespace Not Found: Namespace 'test' not found"
+        );
     }
 }
