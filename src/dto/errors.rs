@@ -70,3 +70,128 @@ impl std::fmt::Display for ErrorTypes {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::{json, Value};
+
+    #[test]
+    fn test_namespace_not_found_error() {
+        let err = NamespaceNotFoundError {
+            message: "Namespace 'test' not found".to_string(),
+        };
+        let iceberg_err: IcebergErrorResponse = err.into();
+
+        assert_eq!(iceberg_err.error.message, "Namespace 'test' not found");
+        assert_eq!(iceberg_err.error.r#type, "NamespaceNotFound");
+        assert_eq!(iceberg_err.error.code, 404);
+        assert!(iceberg_err.error.stack.is_none());
+    }
+
+    #[test]
+    fn test_error_model_serialization() {
+        let error_model = ErrorModel {
+            message: "Internal server error".to_string(),
+            r#type: "ServerError".to_string(),
+            code: 500,
+            stack: Some(vec![
+                "Error at line 10".to_string(),
+                "Error at line 20".to_string(),
+            ]),
+        };
+
+        let serialized = serde_json::to_string(&error_model).unwrap();
+        let expected = json!({
+            "message": "Internal server error",
+            "type": "ServerError",
+            "code": 500,
+            "stack": ["Error at line 10", "Error at line 20"]
+        });
+
+        assert_eq!(serialized, expected.to_string());
+    }
+
+    #[test]
+    fn test_error_model_deserialization() {
+        let json_str = r#"{
+            "message": "Bad request",
+            "type": "BadRequest",
+            "code": 400,
+            "stack": null
+        }"#;
+
+        let error_model: ErrorModel = serde_json::from_str(json_str).unwrap();
+
+        assert_eq!(error_model.message, "Bad request");
+        assert_eq!(error_model.r#type, "BadRequest");
+        assert_eq!(error_model.code, 400);
+        assert!(error_model.stack.is_none());
+    }
+
+    #[test]
+    fn test_iceberg_error_response_serialization() {
+        let error_model = ErrorModel {
+            message: "Service unavailable".to_string(),
+            r#type: "ServiceUnavailable".to_string(),
+            code: 503,
+            stack: None,
+        };
+        let iceberg_err = IcebergErrorResponse { error: error_model };
+
+        let serialized = serde_json::to_string(&iceberg_err).unwrap();
+        let expected = json!({
+            "error": {
+                "message": "Service unavailable",
+                "type": "ServiceUnavailable",
+                "code": 503,
+                "stack": null
+            }
+        });
+
+        assert_eq!(serialized, expected.to_string());
+    }
+
+    #[test]
+    fn test_common_response_serialization() {
+        let error_model = ErrorModel {
+            message: "Unauthorized".to_string(),
+            r#type: "Unauthorized".to_string(),
+            code: 401,
+            stack: None,
+        };
+        let iceberg_err = IcebergErrorResponse { error: error_model };
+        let common_response = CommonResponse {
+            error: Some(iceberg_err),
+        };
+
+        let serialized = serde_json::to_string(&common_response).unwrap();
+        let expected = json!({
+            "error": {
+                "error": {
+                    "message": "Unauthorized",
+                    "type": "Unauthorized",
+                    "code": 401,
+                    "stack": null
+                }
+            }
+        });
+
+        assert_eq!(serialized, expected.to_string());
+    }
+
+    #[test]
+    fn test_error_types_display() {
+        let bad_request = ErrorTypes::BadRequest("Invalid request body".to_string());
+        let unauthorized = ErrorTypes::Unauthorized("Missing authentication token".to_string());
+        let service_unavailable = ErrorTypes::ServiceUnavailable("Server is under maintenance".to_string());
+        let server_error = ErrorTypes::ServerError("Internal server error".to_string());
+        let namespace_not_found = ErrorTypes::NamespaceNotFound("Namespace 'test' not found".to_string());
+
+        assert_eq!(bad_request.to_string(), "Bad Request: Invalid request body");
+        assert_eq!(unauthorized.to_string(), "Unauthorized: Missing authentication token");
+        assert_eq!(service_unavailable.to_string(), "Service Unavailable: Server is under maintenance");
+        assert_eq!(server_error.to_string(), "Internal Server Error: Internal server error");
+        assert_eq!(namespace_not_found.to_string(), "Namespace Not Found: Namespace 'test' not found");
+    }
+}
