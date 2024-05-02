@@ -15,19 +15,19 @@ pub fn routes(db: Arc<Mutex<Database>>) -> Router {
         .route("/namespaces", get(namespace_handler::list_namespaces))
         .route("/namespaces", post(namespace_handler::create_namespace))
         .route(
-            "/namespace/:namespace",
+            "/namespaces/:namespace",
             get(namespace_handler::load_namespace_metadata),
         )
         .route(
-            "/namespace/:namespace",
+            "/namespaces/:namespace",
             head(namespace_handler::namespace_exists),
         )
         .route(
-            "/namespace/:namespace",
+            "/namespaces/:namespace",
             delete(namespace_handler::drop_namespace),
         )
         .route(
-            "/namespace/:namespace/properties",
+            "/namespaces/:namespace/properties",
             post(namespace_handler::set_namespace_properties),
         )
         .with_state(repo);
