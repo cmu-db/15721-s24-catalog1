@@ -1,8 +1,25 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::fmt::Debug;
-use std::fmt::Display;
-use std::fmt::Formatter;
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct NamespaceNotFoundError {
+  pub message: String,
+}
+
+
+impl From<NamespaceNotFoundError> for IcebergErrorResponse {
+  fn from(err: NamespaceNotFoundError) -> Self {
+    IcebergErrorResponse {
+      error: ErrorModel {
+        message: err.message,
+        r#type: "NamespaceNotFound".to_string(),
+        code: 404, 
+        stack: None,
+      },
+    }
+  }
+}
+
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ErrorModel {
@@ -41,6 +58,7 @@ pub enum ErrorTypes {
     Unauthorized(String),
     ServiceUnavailable(String),
     ServerError(String),
+    NamespaceNotFound(String)
 }
 
 impl std::fmt::Display for ErrorTypes {
@@ -50,6 +68,7 @@ impl std::fmt::Display for ErrorTypes {
             ErrorTypes::Unauthorized(msg) => write!(f, "Unauthorized: {}", msg),
             ErrorTypes::ServiceUnavailable(msg) => write!(f, "Service Unavailable: {}", msg),
             ErrorTypes::ServerError(msg) => write!(f, "Internal Server Error: {}", msg),
+            ErrorTypes::NamespaceNotFound(msg) => write!(f, "Namespace Not Found: {}", msg),
         }
     }
 }
