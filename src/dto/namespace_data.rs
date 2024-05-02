@@ -1,19 +1,33 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct NamespaceData {
-    pub name: String,
+    pub name: NamespaceIdent,
     pub properties: Value,
 }
 
 impl NamespaceData {
-    pub fn get_name(&self) -> String {
-        self.name.clone()
+    pub fn get_name(&self) -> &NamespaceIdent {
+        &self.name
     }
 
-    pub fn get_properties(&self) -> Value {
-        self.properties.clone()
+    pub fn get_properties(&self) -> &Value {
+        &self.properties
+    }
+}
+
+/// NamespaceIdent represents the identifier of a namespace in the catalog.
+///
+/// The namespace identifier is a list of strings, where each string is a
+/// component of the namespace. It's catalog implementer's responsibility to
+/// handle the namespace identifier correctly.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct NamespaceIdent(pub Vec<String>);
+
+impl NamespaceIdent {
+    pub fn new(id: Vec<String>) -> NamespaceIdent {
+        NamespaceIdent(id)
     }
 }
 
@@ -23,44 +37,62 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn test_namespace_data_methods() {
-        let properties = json!({"property1": "value1", "property2": "value2"});
-        let namespace_data = NamespaceData {
-            name: "test_namespace".to_string(),
-            properties: properties.clone(),
-        };
+    fn test_namespace_ident() {
+        let id = vec!["test".to_string()];
+        let namespace_ident = NamespaceIdent::new(id.clone());
 
-        // Test get_name method
-        assert_eq!(namespace_data.get_name(), "test_namespace");
-
-        // Test get_properties method
-        assert_eq!(namespace_data.get_properties(), properties);
+        assert_eq!(namespace_ident.0, id);
     }
 
     #[test]
-    fn test_namespace_data_serialization() {
-        let properties = json!({"property1": "value1", "property2": "value2"});
+    fn test_namespace_data() {
+        let id = vec!["test".to_string()];
+        let namespace_ident = NamespaceIdent::new(id.clone());
+        let properties = serde_json::json!({"key": "value"});
+
         let namespace_data = NamespaceData {
-            name: "test_namespace".to_string(),
+            name: namespace_ident.clone(),
             properties: properties.clone(),
         };
 
+        assert_eq!(*namespace_data.get_name(), namespace_ident);
+        assert_eq!(*namespace_data.get_properties(), properties);
+    }
+
+    #[test]
+    fn test_namespace_ident_serde() {
+        let id = vec!["test".to_string()];
+        let namespace_ident = NamespaceIdent::new(id.clone());
+
+        // Serialize
+        let serialized = serde_json::to_string(&namespace_ident).unwrap();
+        assert_eq!(serialized, r#"["test"]"#);
+
+        // Deserialize
+        let deserialized: NamespaceIdent = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized, namespace_ident);
+    }
+
+    #[test]
+    fn test_namespace_data_serde() {
+        let id = vec!["test".to_string()];
+        let namespace_ident = NamespaceIdent::new(id.clone());
+        let properties = json!({"key": "value"});
+
+        let namespace_data = NamespaceData {
+            name: namespace_ident.clone(),
+            properties: properties.clone(),
+        };
+
+        // Serialize
         let serialized = serde_json::to_string(&namespace_data).unwrap();
-        let expected =
-            r#"{"name":"test_namespace","properties":{"property1":"value1","property2":"value2"}}"#;
-        assert_eq!(serialized, expected);
-    }
-
-    #[test]
-    fn test_namespace_data_deserialization() {
-        let data =
-            r#"{"name":"test_namespace","properties":{"property1":"value1","property2":"value2"}}"#;
-        let namespace_data: NamespaceData = serde_json::from_str(data).unwrap();
-
-        assert_eq!(namespace_data.name, "test_namespace");
         assert_eq!(
-            namespace_data.properties,
-            json!({"property1": "value1", "property2": "value2"})
+            serialized,
+            r#"{"name":["test"],"properties":{"key":"value"}}"#
         );
+
+        // Deserialize
+        let deserialized: NamespaceData = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized, namespace_data);
     }
 }

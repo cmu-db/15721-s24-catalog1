@@ -19,10 +19,6 @@ pub fn routes(db: Arc<Mutex<Database>>) -> Router {
             post(table_handler::create_table),
         )
         .route(
-            "/namespaces/:namespace/register",
-            post(table_handler::register_table),
-        )
-        .route(
             "/namespaces/:namespace/tables/:table",
             get(table_handler::load_table),
         )
@@ -35,10 +31,6 @@ pub fn routes(db: Arc<Mutex<Database>>) -> Router {
             head(table_handler::table_exists),
         )
         .route("/tables/rename", post(table_handler::rename_table))
-        .route(
-            "/namespaces/:namespace/tables/:table/metrics",
-            post(table_handler::report_metrics),
-        )
         .with_state(repo);
 
     return router;

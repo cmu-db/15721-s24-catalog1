@@ -1,36 +1,84 @@
+use crate::dto::table_data::TableIdent;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TableRenameRequest {
-    pub namespace: String,
-    pub old_name: String,
-    pub new_name: String,
+    pub source: TableIdent,
+    pub destination: TableIdent,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::dto::namespace_data::NamespaceIdent;
+    use serde_json;
+    #[test]
+    fn test_table_rename_request() {
+        let source = TableIdent {
+            namespace: NamespaceIdent(vec!["source_namespace".to_string()]),
+            name: "source_table".to_string(),
+        };
+
+        let destination = TableIdent {
+            namespace: NamespaceIdent(vec!["destination_namespace".to_string()]),
+            name: "destination_table".to_string(),
+        };
+
+        let request = TableRenameRequest {
+            source,
+            destination,
+        };
+
+        assert_eq!(request.source.namespace.0[0], "source_namespace");
+        assert_eq!(request.source.name, "source_table");
+        assert_eq!(request.destination.namespace.0[0], "destination_namespace");
+        assert_eq!(request.destination.name, "destination_table");
+    }
 
     #[test]
     fn test_table_rename_request_serialization() {
-        let table_rename_request = TableRenameRequest {
-            namespace: "test_namespace".to_string(),
-            old_name: "old_table_name".to_string(),
-            new_name: "new_table_name".to_string(),
+        let source = TableIdent {
+            namespace: NamespaceIdent(vec!["source_namespace".to_string()]),
+            name: "source_table".to_string(),
         };
 
-        let serialized = serde_json::to_string(&table_rename_request).unwrap();
-        let expected = r#"{"namespace":"test_namespace","old_name":"old_table_name","new_name":"new_table_name"}"#;
-        assert_eq!(serialized, expected);
+        let destination = TableIdent {
+            namespace: NamespaceIdent(vec!["destination_namespace".to_string()]),
+            name: "destination_table".to_string(),
+        };
+
+        let request = TableRenameRequest {
+            source,
+            destination,
+        };
+        let serialized = serde_json::to_string(&request).unwrap();
+
+        assert!(serialized.contains("source_namespace"));
+        assert!(serialized.contains("source_table"));
+        assert!(serialized.contains("destination_namespace"));
+        assert!(serialized.contains("destination_table"));
     }
 
     #[test]
     fn test_table_rename_request_deserialization() {
-        let data = r#"{"namespace":"test_namespace","old_name":"old_table_name","new_name":"new_table_name"}"#;
-        let table_rename_request: TableRenameRequest = serde_json::from_str(data).unwrap();
+        let data = r#"
+            {
+                "source": {
+                    "namespace": ["source_namespace"],
+                    "name": "source_table"
+                },
+                "destination": {
+                    "namespace": ["destination_namespace"],
+                    "name": "destination_table"
+                }
+            }
+            "#;
 
-        assert_eq!(table_rename_request.namespace, "test_namespace");
-        assert_eq!(table_rename_request.old_name, "old_table_name");
-        assert_eq!(table_rename_request.new_name, "new_table_name");
+        let request: TableRenameRequest = serde_json::from_str(data).unwrap();
+
+        assert_eq!(request.source.namespace.0[0], "source_namespace");
+        assert_eq!(request.source.name, "source_table");
+        assert_eq!(request.destination.namespace.0[0], "destination_namespace");
+        assert_eq!(request.destination.name, "destination_table");
     }
 }

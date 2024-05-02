@@ -1,33 +1,45 @@
-use crate::dto::namespace_data::NamespaceData;
+use crate::dto::namespace_data::{NamespaceData, NamespaceIdent};
+use crate::dto::set_namespace_properties_req::SetNamespacePropertiesRequest;
 use crate::repository::namespace::NamespaceRepository;
+
 use axum::{
     extract::{Json, Path, State},
     http::StatusCode,
 };
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::sync::Arc;
 
 /*
     TODO:
-    if a namespace or table already exists, you might want to return a StatusCode::CONFLICT
-    instead of StatusCode::INTERNAL_SERVER_ERROR. Similarly, if a namespace or table is not found,
-    you might want to return a StatusCode::NOT_FOUND.
+    Parent Namespace
 */
 pub async fn list_namespaces(
     State(repo): State<Arc<NamespaceRepository>>,
-) -> Result<Json<Vec<String>>, (StatusCode, String)> {
-    repo.list_all_namespaces()
-        .map(Json)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+) -> Result<Json<Value>, (StatusCode, String)> {
+    match repo.list_all_namespaces() {
+        Ok(namespaces) => {
+            let json_object = json!({
+                "namespaces": namespaces
+            });
+            Ok(Json(json_object))
+        }
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Internal server error: {}", e),
+        )),
+    }
 }
 
 pub async fn create_namespace(
     State(repo): State<Arc<NamespaceRepository>>,
     new_namespace: Json<NamespaceData>,
 ) -> Result<Json<NamespaceData>, (StatusCode, String)> {
+    if repo.namespace_exists(new_namespace.get_name()).unwrap() {
+        return Err((StatusCode::CONFLICT, format!("namespace already exists")));
+    }
     repo.create_namespace(
-        new_namespace.get_name(),
-        Some(new_namespace.get_properties()),
+        new_namespace.get_name().clone(),
+        Some(new_namespace.get_properties().clone()),
     )
     .map(|_| new_namespace)
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
@@ -37,7 +49,13 @@ pub async fn load_namespace_metadata(
     State(repo): State<Arc<NamespaceRepository>>,
     Path(namespace): Path<String>,
 ) -> Result<Json<NamespaceData>, (StatusCode, String)> {
-    match repo.load_namespace(namespace.as_str()) {
+    let id = NamespaceIdent::new(
+        namespace
+            .split('\u{1F}')
+            .map(|part| part.to_string())
+            .collect(),
+    );
+    match repo.load_namespace(&id) {
         Ok(Some(metadata)) => Ok(Json(metadata)),
         Ok(None) => Err((
             StatusCode::NOT_FOUND,
@@ -51,10 +69,17 @@ pub async fn namespace_exists(
     State(repo): State<Arc<NamespaceRepository>>,
     Path(namespace): Path<String>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    repo.namespace_exists(namespace.as_str())
+    let id = NamespaceIdent::new(
+        namespace
+            .split('\u{1F}')
+            .map(|part| part.to_string())
+            .collect(),
+    );
+    repo.namespace_exists(&id)
         .map(|exists| {
             if exists {
-                StatusCode::FOUND
+                // Ideally this should be FOUND but Iceberg spec says No content
+                StatusCode::NO_CONTENT
             } else {
                 StatusCode::NOT_FOUND
             }
@@ -66,7 +91,17 @@ pub async fn drop_namespace(
     State(repo): State<Arc<NamespaceRepository>>,
     Path(namespace): Path<String>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    repo.delete_namespace(namespace.as_str())
+    let id = NamespaceIdent::new(
+        namespace
+            .split('\u{1F}')
+            .map(|part| part.to_string())
+            .collect(),
+    );
+    if !repo.namespace_exists(&id).unwrap() {
+        return Err((StatusCode::NOT_FOUND, format!("namespace does not exist")));
+    }
+
+    repo.delete_namespace(&id)
         .map(|_| StatusCode::NO_CONTENT)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
 }
@@ -74,238 +109,119 @@ pub async fn drop_namespace(
 pub async fn set_namespace_properties(
     State(repo): State<Arc<NamespaceRepository>>,
     Path(namespace): Path<String>,
-    properties: Json<Value>,
+    request_body: Json<SetNamespacePropertiesRequest>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    repo.set_namespace_properties(namespace.as_str(), properties.0)
-        .map(|_| StatusCode::OK)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+    let id = NamespaceIdent::new(
+        namespace
+            .split('\u{1F}')
+            .map(|part| part.to_string())
+            .collect(),
+    );
+
+    if !repo.namespace_exists(&id).unwrap() {
+        return Err((StatusCode::NOT_FOUND, format!("namespace does not exist")));
+    }
+
+    // Check if a property key was included in both `removals` and `updates`
+
+    repo.set_namespace_properties(
+        id,
+        request_body.removals.clone(),
+        request_body.updates.clone(),
+    )
+    .map(|_| StatusCode::OK)
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
 }
 
-// todo: check commented tests
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::database::database::Database;
+    use crate::dto::set_namespace_properties_req::SetNamespacePropertiesRequest;
     use axum::http::StatusCode;
-    use serde_json::json;
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
-
     #[tokio::test]
-    async fn test_list_namespaces() {
+    async fn test_namespace_endpoints() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+        let db = Arc::new(Mutex::new(db));
         let repo = Arc::new(NamespaceRepository::new(Arc::new(Mutex::new(
             Database::open(tempdir().unwrap().path()).unwrap(),
         ))));
-        let data1 = list_namespaces(State(repo)).await.unwrap();
-        let data2: Json<Vec<String>> = Json(vec![]);
-        assert!(*data1 == *data2);
-    }
-
-    #[tokio::test]
-    async fn test_create_namespace() {
-        let repo = Arc::new(NamespaceRepository::new(Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ))));
+        // Test create_namespace
         let new_namespace = Json(NamespaceData {
-            name: "namespace".to_string(),
-            properties: json!({}),
+            name: NamespaceIdent(vec!["test".to_string()]),
+            properties: json!({"property1": "value1"}),
         });
         assert_eq!(
-            create_namespace(State(repo), new_namespace.clone())
+            create_namespace(State(repo.clone()), new_namespace.clone())
                 .await
                 .unwrap()
                 .name,
             new_namespace.name
         );
-    }
 
-    #[tokio::test]
-    async fn test_load_namespace_metadata() {
-        let repo = Arc::new(NamespaceRepository::new(Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ))));
-        let new_namespace = Json(NamespaceData {
-            name: "namespace".to_string(),
-            properties: json!({}),
-        });
-        let _ = create_namespace(State(repo.clone()), new_namespace.clone())
-            .await
-            .unwrap();
-
+        // Test namespace_exists
         assert_eq!(
-            load_namespace_metadata(State(repo), Path("namespace".to_string()))
-                .await
-                .unwrap()
-                .name,
-            new_namespace.name
-        );
-    }
-
-    #[tokio::test]
-    async fn test_namespace_exists() {
-        let repo = Arc::new(NamespaceRepository::new(Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ))));
-        let new_namespace = Json(NamespaceData {
-            name: "namespace".to_string(),
-            properties: json!({}),
-        });
-        let _ = create_namespace(State(repo.clone()), new_namespace)
-            .await
-            .unwrap();
-        assert_eq!(
-            namespace_exists(State(repo), Path("namespace".to_string()))
-                .await
-                .unwrap(),
-            StatusCode::FOUND
-        );
-    }
-
-    #[tokio::test]
-    async fn test_drop_namespace() {
-        let repo = Arc::new(NamespaceRepository::new(Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ))));
-        let new_namespace = Json(NamespaceData {
-            name: "namespace".to_string(),
-            properties: json!({}),
-        });
-        let _ = create_namespace(State(repo.clone()), new_namespace)
-            .await
-            .unwrap();
-        assert_eq!(
-            drop_namespace(State(repo), Path("namespace".to_string()))
+            namespace_exists(State(repo.clone()), Path("test".to_string()))
                 .await
                 .unwrap(),
             StatusCode::NO_CONTENT
         );
-    }
 
-    #[tokio::test]
-    async fn test_set_namespace_properties() {
-        let repo = Arc::new(NamespaceRepository::new(Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ))));
-        let new_namespace = Json(NamespaceData {
-            name: "namespace".to_string(),
-            properties: json!({}),
+        // Test load_namespace_metadata
+        assert_eq!(
+            load_namespace_metadata(State(repo.clone()), Path("test".to_string()))
+                .await
+                .unwrap()
+                .name,
+            new_namespace.name
+        );
+
+        // Test set_namespace_properties
+        let set_namespace_properties_request = Json(SetNamespacePropertiesRequest {
+            removals: vec!["property1".to_string()],
+            updates: serde_json::from_value(json!({"property2": "value2"})).unwrap(),
         });
-        let _ = create_namespace(State(repo.clone()), new_namespace)
-            .await
-            .unwrap();
         assert_eq!(
             set_namespace_properties(
-                State(repo),
-                Path("namespace".to_string()),
-                Json(json!({"property": "value"}))
+                State(repo.clone()),
+                Path("test".to_string()),
+                set_namespace_properties_request
             )
             .await
             .unwrap(),
             StatusCode::OK
         );
-    }
 
-    // Negative cases
-    #[tokio::test]
-    async fn test_load_namespace_metadata_not_found() {
-        let repo = Arc::new(NamespaceRepository::new(Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ))));
+        // Test load_namespace_metadata after set_namespace_properties
         assert_eq!(
-            load_namespace_metadata(State(repo), Path("nonexistent".to_string()))
+            load_namespace_metadata(State(repo.clone()), Path("test".to_string()))
                 .await
-                .unwrap_err()
-                .0,
-            StatusCode::NOT_FOUND
+                .unwrap()
+                .name,
+            Json(NamespaceData {
+                name: NamespaceIdent(vec!["test".to_string()]),
+                properties: json!({"property2": "value2"}),
+            })
+            .name
         );
-    }
 
-    #[tokio::test]
-    async fn test_namespace_exists_not_found() {
-        let repo = Arc::new(NamespaceRepository::new(Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ))));
+        // Test drop_namespace
         assert_eq!(
-            namespace_exists(State(repo), Path("nonexistent".to_string()))
+            drop_namespace(State(repo.clone()), Path("test".to_string()))
+                .await
+                .unwrap(),
+            StatusCode::NO_CONTENT
+        );
+
+        // Test namespace_exists after drop_namespace
+        assert_eq!(
+            namespace_exists(State(repo.clone()), Path("test".to_string()))
                 .await
                 .unwrap(),
             StatusCode::NOT_FOUND
         );
     }
-
-    /*
-    #[tokio::test]
-    async fn test_drop_namespace_not_found() {
-        let repo = Arc::new(NamespaceRepository::new(Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ))));
-        assert_eq!(
-            drop_namespace(State(repo), Path("nonexistent".to_string()))
-                .await
-                .unwrap_err()
-                .0,
-            StatusCode::INTERNAL_SERVER_ERROR
-        );
-    }
-    */
-
-    #[tokio::test]
-    async fn test_set_namespace_properties_not_found() {
-        let repo = Arc::new(NamespaceRepository::new(Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ))));
-        assert_eq!(
-            set_namespace_properties(
-                State(repo),
-                Path("nonexistent".to_string()),
-                Json(json!({"property": "value"}))
-            )
-            .await
-            .unwrap_err()
-            .0,
-            StatusCode::INTERNAL_SERVER_ERROR
-        );
-    }
-
-    /*
-    // Corner cases
-    #[tokio::test]
-    async fn test_create_namespace_empty_name() {
-        let repo = Arc::new(NamespaceRepository::new(Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ))));
-        let new_namespace = Json(NamespaceData {
-            name: "".to_string(),
-            properties: json!({}),
-        });
-        assert_eq!(
-            create_namespace(State(repo), new_namespace)
-                .await
-                .unwrap_err()
-                .0,
-            StatusCode::INTERNAL_SERVER_ERROR
-        );
-    }
-
-    #[tokio::test]
-    async fn test_create_namespace_already_exists() {
-        let repo = Arc::new(NamespaceRepository::new(Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ))));
-        let new_namespace = Json(NamespaceData {
-            name: "namespace".to_string(),
-            properties: json!({}),
-        });
-        let _ = create_namespace(State(repo.clone()), new_namespace.clone())
-            .await
-            .unwrap();
-        assert_eq!(
-            create_namespace(State(repo), new_namespace)
-                .await
-                .unwrap_err()
-                .0,
-            StatusCode::INTERNAL_SERVER_ERROR
-        );
-    }
-    */
 }

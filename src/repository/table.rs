@@ -1,8 +1,10 @@
 use crate::database::database::Database;
+use crate::dto::namespace_data::{NamespaceData, NamespaceIdent};
 use crate::dto::rename_request::TableRenameRequest;
-use crate::dto::table_data::TableData;
+use crate::dto::table_data::{Table, TableCreation, TableIdent, TableMetadata};
 use std::io::{Error, ErrorKind};
 use std::sync::{Arc, Mutex};
+use uuid::Uuid;
 
 pub struct TableRepository {
     database: Arc<Mutex<Database>>,
@@ -13,317 +15,250 @@ impl TableRepository {
         Self { database }
     }
 
-    pub fn list_all_tables(&self, namespace: &str) -> Result<Option<Vec<String>>, Error> {
+    pub fn list_all_tables(
+        &self,
+        namespace: &NamespaceIdent,
+    ) -> Result<Option<Vec<TableIdent>>, Error> {
         let db = self.database.lock().unwrap();
-        db.get::<Vec<String>>("TableNamespaceMap", namespace)
+        let _: NamespaceData = match db.get("NamespaceData", namespace)? {
+            Some(data) => data,
+            None => {
+                return Err(std::io::Error::new(
+                    ErrorKind::NotFound,
+                    format!("Namespace {} not found", namespace.clone().0.join("\u{1F}")),
+                ))
+            }
+        };
+        db.get::<NamespaceIdent, Vec<TableIdent>>("TableNamespaceMap", namespace)
     }
 
-    pub fn create_table(&self, namespace: &str, table: &TableData) -> Result<(), Error> {
+    pub fn create_table(
+        &self,
+        namespace: &NamespaceIdent,
+        table_creation: &TableCreation,
+    ) -> Result<(), Error> {
         let db = self.database.lock().unwrap();
-        db.insert("TableData", &table.name, table)?;
+        let _: NamespaceData = match db.get("NamespaceData", namespace)? {
+            Some(data) => data,
+            None => {
+                return Err(std::io::Error::new(
+                    ErrorKind::NotFound,
+                    format!("Namespace {} not found", namespace.clone().0.join("\u{1F}")),
+                ))
+            }
+        };
+
+        let table_id = TableIdent::new(namespace.clone(), table_creation.name.clone());
+        let table_uuid = Uuid::new_v4().to_string();
+
+        let table_metadata = TableMetadata { table_uuid };
+
         let mut tables = db
-            .get::<Vec<String>>("TableNamespaceMap", namespace)
+            .get::<NamespaceIdent, Vec<TableIdent>>("TableNamespaceMap", namespace)
             .unwrap()
             .unwrap_or_else(|| vec![]);
-        tables.push(table.name.clone());
+
+        if tables.contains(&table_id) {
+            return Err(std::io::Error::new(
+                ErrorKind::AlreadyExists,
+                format!(
+                    "Table {} already exists in namespace {}",
+                    table_creation.name,
+                    namespace.clone().0.join("\u{1F}")
+                ),
+            ));
+        }
+
+        db.insert(
+            "TableData",
+            &table_id,
+            &Table {
+                id: table_id.clone(),
+                metadata: table_metadata,
+            },
+        )?;
+        tables.push(table_id.clone());
         let r_val = db.insert("TableNamespaceMap", namespace, &tables);
         r_val
     }
 
-    pub fn register_table(&self, namespace: &str, table: &TableData) -> Result<(), Error> {
-        self.create_table(namespace, table)
-    }
-
     pub fn load_table(
         &self,
-        namespace: &str,
-        table_name: &str,
-    ) -> Result<Option<TableData>, Error> {
-        // Check if the table is in the given namespace
-        let tables_in_namespace = self.list_all_tables(namespace)?;
-        if let Some(tables) = tables_in_namespace {
-            if !tables.contains(&table_name.to_string()) {
-                return Err(Error::new(
-                    ErrorKind::NotFound,
-                    "Table not found in the given namespace",
-                ));
-            }
-        }
+        namespace: &NamespaceIdent,
+        table_name: String,
+    ) -> Result<Option<Table>, Error> {
+        let table_id = TableIdent::new(namespace.clone(), table_name.clone());
         let db = self.database.lock().unwrap();
         // If the table is in the namespace, get the table data
-        db.get::<TableData>("TableData", table_name)
+        db.get::<TableIdent, Table>("TableData", &table_id)
     }
 
-    pub fn drop_table(&self, namespace: &str, table_name: &str) -> Result<(), Error> {
+    pub fn drop_table(&self, namespace: &NamespaceIdent, table_name: String) -> Result<(), Error> {
         let db = self.database.lock().unwrap();
-        db.delete("TableData", table_name)?;
+        let table_id = TableIdent::new(namespace.clone(), table_name.clone());
+
+        let _: Table = match db.get::<TableIdent, Table>("TableData", &table_id)? {
+            Some(data) => data,
+            None => {
+                return Err(std::io::Error::new(
+                    ErrorKind::NotFound,
+                    format!("Namespace {} not found", namespace.clone().0.join("\u{1F}")),
+                ))
+            }
+        };
+
+        db.delete("TableData", &table_id)?;
         let mut tables = db
-            .get::<Vec<String>>("TableNamespaceMap", namespace)
+            .get::<NamespaceIdent, Vec<TableIdent>>("TableNamespaceMap", namespace)
             .unwrap()
             .unwrap();
-        tables.retain(|name| name != table_name);
+        tables.retain(|id| id.name != table_name);
         db.insert("TableNamespaceMap", namespace, &tables)
     }
 
-    // for the ?? route
-    pub fn insert_table(&self, namespace: &str, table: &TableData) -> Result<(), Error> {
-        self.create_table(namespace, table)
-    }
-
-    pub fn table_exists(&self, namespace: &str, table_name: &str) -> Result<bool, Error> {
+    pub fn table_exists(
+        &self,
+        namespace: &NamespaceIdent,
+        table_name: String,
+    ) -> Result<bool, Error> {
         let table = self.load_table(namespace, table_name)?;
         Ok(table.is_some())
     }
 
     pub fn rename_table(&self, rename_request: &TableRenameRequest) -> Result<(), Error> {
-        let namespace = &rename_request.namespace;
-        let old_name = &rename_request.old_name;
-        let new_name = &rename_request.new_name;
+        let source = rename_request.source.clone();
+        let destination = rename_request.destination.clone();
+        let namespace = source.namespace.clone();
+
         let table = self
-            .load_table(namespace, old_name)?
-            .ok_or_else(|| Error::new(ErrorKind::NotFound, "Table not found"))?;
+            .load_table(&namespace, source.name.clone())?
+            .ok_or_else(|| Error::new(ErrorKind::NotFound, "Source table not found"))?;
+
+        if self.table_exists(&destination.namespace, destination.name.clone())? {
+            return Err(Error::new(
+                ErrorKind::AlreadyExists,
+                "Destination table already exists",
+            ));
+        }
+
         let mut new_table = table.clone();
-        new_table.name = new_name.clone();
-        self.drop_table(namespace, old_name)?;
-        self.create_table(namespace, &new_table)
+        new_table.id = destination.clone();
+
+        self.create_table(
+            &destination.namespace.clone(),
+            &TableCreation {
+                name: destination.name.clone(),
+            },
+        )?;
+        self.drop_table(&namespace, source.name.clone())
     }
 }
 
-// todo: check commented tests
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
+    use crate::dto::table_data::TableCreation;
+    use crate::repository::namespace::NamespaceRepository;
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
 
     #[test]
-    fn test_list_all_tables() {
-        let db = Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ));
-        let repo = TableRepository::new(db);
-        assert_eq!(repo.list_all_tables("namespace").unwrap(), None);
-    }
+    fn test_table_repository() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+        let db = Arc::new(Mutex::new(db));
+        let repo = TableRepository::new(db.clone());
 
-    #[test]
-    fn test_create_table() {
-        let db = Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ));
-        let repo = TableRepository::new(db);
-        let table = TableData {
-            name: "table".to_string(),
-            num_columns: 0,
-            read_properties: json!({}),
-            write_properties: json!({}),
-            file_urls: vec![],
-            columns: vec![],
-        };
-        assert!(repo.create_table("namespace", &table).is_ok());
-    }
+        // Create a namespace for testing
+        let namespace_ident = NamespaceIdent(vec!["test".to_string()]);
+        let namespace_repo = NamespaceRepository::new(db.clone());
+        namespace_repo
+            .create_namespace(namespace_ident.clone(), None)
+            .unwrap();
 
-    #[test]
-    fn test_load_table() {
-        let db = Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ));
-        let repo = TableRepository::new(db);
-        let table = TableData {
-            name: "table".to_string(),
-            num_columns: 0,
-            read_properties: json!({}),
-            write_properties: json!({}),
-            file_urls: vec![],
-            columns: vec![],
+        // Test create_table
+        let table_creation = TableCreation {
+            name: "table1".to_string(),
         };
-        repo.create_table("namespace", &table).unwrap();
-        assert!(repo.load_table("namespace", "table").unwrap().is_some());
-    }
+        repo.create_table(&namespace_ident, &table_creation)
+            .unwrap();
 
-    #[test]
-    fn test_drop_table() {
-        let db = Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ));
-        let repo = TableRepository::new(db);
-        let table = TableData {
-            name: "table".to_string(),
-            num_columns: 0,
-            read_properties: json!({}),
-            write_properties: json!({}),
-            file_urls: vec![],
-            columns: vec![],
-        };
-        repo.create_table("namespace", &table).unwrap();
-        assert!(repo.drop_table("namespace", "table").is_ok());
-    }
-
-    #[test]
-    fn test_table_exists() {
-        let db = Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ));
-        let repo = TableRepository::new(db);
-        let table = TableData {
-            name: "table".to_string(),
-            num_columns: 0,
-            read_properties: json!({}),
-            write_properties: json!({}),
-            file_urls: vec![],
-            columns: vec![],
-        };
-        repo.create_table("namespace", &table).unwrap();
-        assert!(repo.table_exists("namespace", "table").unwrap());
-    }
-
-    #[test]
-    fn test_rename_table() {
-        let db = Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ));
-        let repo = TableRepository::new(db);
-        let table = TableData {
-            name: "table".to_string(),
-            num_columns: 0,
-            read_properties: json!({}),
-            write_properties: json!({}),
-            file_urls: vec![],
-            columns: vec![],
-        };
-        repo.create_table("namespace", &table).unwrap();
-        let rename_request = TableRenameRequest {
-            namespace: "namespace".to_string(),
-            old_name: "table".to_string(),
-            new_name: "new_table".to_string(),
-        };
-        assert!(repo.rename_table(&rename_request).is_ok());
-    }
-
-    #[test]
-    fn test_load_table_not_found() {
-        let db = Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ));
-        let repo = TableRepository::new(db);
+        // Test table_exists
         assert!(repo
-            .load_table("namespace", "nonexistent")
+            .table_exists(&namespace_ident, "table1".to_string())
+            .unwrap());
+
+        // Test load_table
+        let table = repo
+            .load_table(&namespace_ident, "table1".to_string())
             .unwrap()
-            .is_none());
-    }
+            .unwrap();
+        assert_eq!(table.id.name, "table1");
 
-    #[test]
-    fn test_table_exists_not_found() {
-        let db = Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ));
-        let repo = TableRepository::new(db);
-        assert!(!repo.table_exists("namespace", "nonexistent").unwrap());
-    }
-
-    /*
-    #[test]
-    fn test_drop_table_not_found() {
-        let db = Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ));
-        let repo = TableRepository::new(db);
-        assert!(repo.drop_table("namespace", "nonexistent").is_err());
-    }
-    */
-
-    #[test]
-    fn test_rename_table_not_found() {
-        let db = Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ));
-        let repo = TableRepository::new(db);
+        // Test rename_table
         let rename_request = TableRenameRequest {
-            namespace: "namespace".to_string(),
-            old_name: "nonexistent".to_string(),
-            new_name: "new_table".to_string(),
+            source: TableIdent::new(namespace_ident.clone(), "table1".to_string()),
+            destination: TableIdent::new(namespace_ident.clone(), "table2".to_string()),
+        };
+        repo.rename_table(&rename_request).unwrap();
+        assert!(!repo
+            .table_exists(&namespace_ident, "table1".to_string())
+            .unwrap());
+        assert!(repo
+            .table_exists(&namespace_ident, "table2".to_string())
+            .unwrap());
+
+        // Test drop_table
+        repo.drop_table(&namespace_ident, "table2".to_string())
+            .unwrap();
+        assert!(!repo
+            .table_exists(&namespace_ident, "table2".to_string())
+            .unwrap());
+    }
+
+    #[test]
+    fn test_table_repository_negative() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+        let db = Arc::new(Mutex::new(db));
+        let repo = TableRepository::new(db.clone());
+
+        // Test with non-existent namespace
+        let non_existent_namespace = NamespaceIdent(vec!["non_existent".to_string()]);
+        let table_creation = TableCreation {
+            name: "table1".to_string(),
+        };
+        assert!(repo
+            .create_table(&non_existent_namespace, &table_creation)
+            .is_err());
+        assert!(repo
+            .drop_table(&non_existent_namespace, "table1".to_string())
+            .is_err());
+
+        // Test with existing table
+        let namespace_ident = NamespaceIdent(vec!["test".to_string()]);
+        let namespace_repo = NamespaceRepository::new(db.clone());
+        namespace_repo
+            .create_namespace(namespace_ident.clone(), None)
+            .unwrap();
+        repo.create_table(&namespace_ident, &table_creation)
+            .unwrap();
+        assert!(repo
+            .create_table(&namespace_ident, &table_creation)
+            .is_err());
+
+        // Test rename_table with non-existent source table
+        let rename_request = TableRenameRequest {
+            source: TableIdent::new(namespace_ident.clone(), "non_existent".to_string()),
+            destination: TableIdent::new(namespace_ident.clone(), "table2".to_string()),
+        };
+        assert!(repo.rename_table(&rename_request).is_err());
+
+        // Test rename_table with existing destination table
+        let rename_request = TableRenameRequest {
+            source: TableIdent::new(namespace_ident.clone(), "table1".to_string()),
+            destination: TableIdent::new(namespace_ident.clone(), "table1".to_string()),
         };
         assert!(repo.rename_table(&rename_request).is_err());
     }
-
-    /*
-    #[test]
-    fn test_create_table_empty_name() {
-        let db = Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ));
-        let repo = TableRepository::new(db);
-        let table = TableData {
-            name: "".to_string(),
-            num_columns: 0,
-            read_properties: json!({}),
-            write_properties: json!({}),
-            file_urls: vec![],
-            columns: vec![],
-        };
-        assert!(repo.create_table("namespace", &table).is_err());
-    }
-
-
-    #[test]
-    fn test_create_table_already_exists() {
-        let db = Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ));
-        let repo = TableRepository::new(db);
-        let table = TableData {
-            name: "table".to_string(),
-            num_columns: 0,
-            read_properties: json!({}),
-            write_properties: json!({}),
-            file_urls: vec![],
-            columns: vec![],
-        };
-        repo.create_table("namespace", &table).unwrap();
-        assert!(repo.create_table("namespace", &table).is_err());
-    }
-    */
-
-    #[test]
-    fn test_load_table_empty_name() {
-        let db = Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ));
-        let repo = TableRepository::new(db);
-        assert!(repo.load_table("namespace", "").unwrap().is_none());
-    }
-    /*
-    #[test]
-    fn test_drop_table_empty_name() {
-        let db = Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ));
-        let repo = TableRepository::new(db);
-        assert!(repo.drop_table("namespace", "").is_err());
-    }
-
-
-    #[test]
-    fn test_rename_table_empty_new_name() {
-        let db = Arc::new(Mutex::new(
-            Database::open(tempdir().unwrap().path()).unwrap(),
-        ));
-        let repo = TableRepository::new(db);
-        let table = TableData {
-            name: "table".to_string(),
-            num_columns: 0,
-            read_properties: json!({}),
-            write_properties: json!({}),
-            file_urls: vec![],
-            columns: vec![],
-        };
-        repo.create_table("namespace", &table).unwrap();
-        let rename_request = TableRenameRequest {
-            namespace: "namespace".to_string(),
-            old_name: "table".to_string(),
-            new_name: "".to_string(),
-        };
-        assert!(repo.rename_table(&rename_request).is_err());
-    }
-    */
 }
