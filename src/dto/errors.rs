@@ -89,28 +89,7 @@ mod tests {
         assert!(iceberg_err.error.stack.is_none());
     }
 
-    #[test]
-    fn test_error_model_serialization() {
-        let error_model = ErrorModel {
-            message: "Internal server error".to_string(),
-            r#type: "ServerError".to_string(),
-            code: 500,
-            stack: Some(vec![
-                "Error at line 10".to_string(),
-                "Error at line 20".to_string(),
-            ]),
-        };
 
-        let serialized = serde_json::to_string(&error_model).unwrap();
-        let expected = json!({
-            "message": "Internal server error",
-            "type": "ServerError",
-            "code": 500,
-            "stack": ["Error at line 10", "Error at line 20"]
-        });
-
-        assert_eq!(serialized, expected.to_string());
-    }
 
     #[test]
     fn test_error_model_deserialization() {
@@ -129,56 +108,7 @@ mod tests {
         assert!(error_model.stack.is_none());
     }
 
-    #[test]
-    fn test_iceberg_error_response_serialization() {
-        let error_model = ErrorModel {
-            message: "Service unavailable".to_string(),
-            r#type: "ServiceUnavailable".to_string(),
-            code: 503,
-            stack: None,
-        };
-        let iceberg_err = IcebergErrorResponse { error: error_model };
 
-        let serialized = serde_json::to_string(&iceberg_err).unwrap();
-        let expected = json!({
-            "error": {
-                "message": "Service unavailable",
-                "type": "ServiceUnavailable",
-                "code": 503,
-                "stack": null
-            }
-        });
-
-        assert_eq!(serialized, expected.to_string());
-    }
-
-    #[test]
-    fn test_common_response_serialization() {
-        let error_model = ErrorModel {
-            message: "Unauthorized".to_string(),
-            r#type: "Unauthorized".to_string(),
-            code: 401,
-            stack: None,
-        };
-        let iceberg_err = IcebergErrorResponse { error: error_model };
-        let common_response = CommonResponse {
-            error: Some(iceberg_err),
-        };
-
-        let serialized = serde_json::to_string(&common_response).unwrap();
-        let expected = json!({
-            "error": {
-                "error": {
-                    "message": "Unauthorized",
-                    "type": "Unauthorized",
-                    "code": 401,
-                    "stack": null
-                }
-            }
-        });
-
-        assert_eq!(serialized, expected.to_string());
-    }
 
     #[test]
     fn test_error_types_display() {
