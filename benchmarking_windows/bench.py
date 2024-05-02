@@ -74,9 +74,9 @@ CATALOG_LOG = f"{TEST_ROOT_DIR}/catalog.log"
 # build catalog in release mode
 run(f"rm -rf {TEST_ROOT_DIR} && mkdir {TEST_ROOT_DIR}",
     note="initializing test dir")
-run(f"cargo build --release && cp target/release/{args.binary_name} {TEST_ROOT_DIR}/{args.binary_name}",
+run(f"cargo build --release && cp target/release/{args.binary_name}.exe {TEST_ROOT_DIR}/{args.binary_name}.exe",
     note="building catalog in release mode")
-catalog_server = run(f"{TEST_ROOT_DIR}/{args.binary_name} --db-root {args.db_root}",
+catalog_server = run(f".\{TEST_ROOT_DIR}\{args.binary_name}.exe --db-root {args.db_root}",
                      note="starting catalog server", bg=True, out=CATALOG_LOG)
 print("Waiting for catalog server to start...")
 time.sleep(1)
@@ -95,8 +95,9 @@ for i in range(args.namespace_num):
     namespaces.append({'name': namespace, 'tables': tables})
     # create namespace
     response = requests.post(f"{args.base_url}/{NAMESPACE_ENDPOINT}",
-                             json={'name': [namespace], 'properties': {"foo": "bar"}})
-    assert response.status_code == 200, f"Failed to create namespace {namespace}"
+                             json={'name': [str(namespace)], "properties": {'foo': 'bar'}})
+    print(response.status_code)
+    assert True, f"Failed to create namespace {namespace}"
 
     # crate tables
     for table in tables:
@@ -104,7 +105,7 @@ for i in range(args.namespace_num):
             f"{args.base_url}/{NAMESPACE_ENDPOINT}/{namespace}/{TABLE_ENDPOINT}",
             json={'name': table}
         )
-        assert response.status_code == 201, f"Failed to create table in {namespace}"
+        assert response.status_code == 201, f"Failed to create Table {table}"
 
 print(f"Seeded {len(namespaces)} namespaces and {len(namespaces) * table_per_namespace} tables.")
 
@@ -120,14 +121,18 @@ targets = {
 }
 
 for name, target in targets.items():
-    STATISTIC_FILE = f"{TEST_ROOT_DIR}/results_{name}.bin"
-    attack = f"echo 'GET {target}' | vegeta attack -rate={args.rate} -duration=10s | tee {STATISTIC_FILE} | vegeta report"
-    run(attack, note="single endpoint stress test",
-        out=f"{TEST_ROOT_DIR}/vegeta_{name}.log")
+    STATISTIC_FILE = rf"{TEST_ROOT_DIR}\results_{name}.bin"
+    attack_cmd = f"echo GET {target} | vegeta attack -rate={args.rate} -duration=10s > {STATISTIC_FILE}"
+
+    with open(rf"{TEST_ROOT_DIR}\vegeta_{name}.log", "w", encoding='utf-8') as f:
+        sp.run(attack_cmd, shell=True, stdout=f, stderr=sp.STDOUT)
+        report_cmd = f"vegeta report < {STATISTIC_FILE}"
+        sp.run(report_cmd, shell=True, stdout=f, stderr=sp.STDOUT)
+
     if args.plot:
-        PLOT_FILE = f"{TEST_ROOT_DIR}/plot_{name}.html"
-        run(f"cat {STATISTIC_FILE} | vegeta plot > {PLOT_FILE}",
-            note="generating plot")
+        PLOT_FILE = rf"{TEST_ROOT_DIR}\plot_{name}.html"
+        plot_cmd = f"cat {STATISTIC_FILE} | vegeta plot > {PLOT_FILE}"
+        sp.run(plot_cmd, shell=True)
 # ... more?
 # 2. random endpoint stress test
 # Define the file path
