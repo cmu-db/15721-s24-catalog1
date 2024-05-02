@@ -1,0 +1,17 @@
+{
+    "info": {
+        "title":    "OLAP System Catalog",
+        "github":   "https://github.com/cmu-db/15721-s24-catalog1",
+        "description":  "We developed a metadata catalog to help the query optimizer in modern OLAP systems, which need efficient metadata management for analytic queries. Our Rust application uses RocksDB for metadata storage, exposing a REST API for interaction. The architecture includes a data model, database, service, and controller layers, ensuring seamless metadata management. RocksDB's key-value store, chosen for its concurrency and scalability, outperformed SQLite for our needs. Axum powers our REST API for efficient asynchronous operations. Testing ensures the catalog's correctness and performance, with a design focused on optimizing read performance over frequent updates.",
+        "students": [
+            {
+                "name": "Aditya Ajmera",
+                "url": "https://www.linkedin.com/in/adityaajmera/"
+            },
+            {
+                "name": "Simran Makhija",
+                "url": "https://www.linkedin.com/in/simran-makhija/"
+            }
+        ]
+    }
+}
