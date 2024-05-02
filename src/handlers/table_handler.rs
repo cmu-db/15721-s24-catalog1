@@ -108,9 +108,13 @@ pub async fn rename_table(
     State(repo): State<Arc<TableRepository>>,
     request: Json<TableRenameRequest>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    
-    repo.rename_table(&request)
-        .map(|_| StatusCode::OK)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+    match repo.rename_table(&request) {
+        Ok(_) => Ok(StatusCode::NO_CONTENT),
+        Err(e) => match e.kind() {
+            ErrorKind::NotFound => Err((StatusCode::NOT_FOUND, format!("Error: {}", e))),
+            ErrorKind::AlreadyExists => Err((StatusCode::CONFLICT, format!("Error: {}", e))),
+            _ => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
+        },
+    }
 }
 

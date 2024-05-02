@@ -81,7 +81,7 @@ impl TableRepository {
     pub fn drop_table(&self, namespace: &NamespaceIdent, table_name: String) -> Result<(), Error> {
         let db = self.database.lock().unwrap();
         let table_id = TableIdent::new(namespace.clone(), table_name.clone());
-        
+
         let _ : Table = match db.get::<TableIdent, Table>("TableData", &table_id)? {
             Some(data) => data,
             None => {
@@ -110,15 +110,20 @@ impl TableRepository {
         let source = rename_request.source.clone();
         let destination = rename_request.destination.clone();
         let namespace = source.namespace.clone();
+
         let table = self
             .load_table(&namespace, source.name.clone())?
-            .ok_or_else(|| Error::new(ErrorKind::NotFound, "Table not found"))?;
-        
+            .ok_or_else(|| Error::new(ErrorKind::NotFound, "Source table not found"))?;
+
+        if self.table_exists(&destination.namespace, destination.name.clone())? {
+            return Err(Error::new(ErrorKind::AlreadyExists, "Destination table already exists"));
+        }
+
         let mut new_table = table.clone();
         new_table.id = destination.clone();
 
-        self.drop_table(&namespace, source.name.clone())?;
-        self.create_table(&destination.namespace.clone(), &TableCreation{name: destination.name.clone()})
+        self.create_table(&destination.namespace.clone(), &TableCreation{name: destination.name.clone()})?;
+        self.drop_table(&namespace, source.name.clone())
     }
 }
 
