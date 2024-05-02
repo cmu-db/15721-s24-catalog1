@@ -157,7 +157,8 @@ mod tests {
         assert_eq!(
             create_namespace(State(repo.clone()), new_namespace.clone())
                 .await
-                .unwrap().name,
+                .unwrap()
+                .name,
             new_namespace.name
         );
 
@@ -173,7 +174,8 @@ mod tests {
         assert_eq!(
             load_namespace_metadata(State(repo.clone()), Path("test".to_string()))
                 .await
-                .unwrap().name,
+                .unwrap()
+                .name,
             new_namespace.name
         );
 
@@ -197,11 +199,13 @@ mod tests {
         assert_eq!(
             load_namespace_metadata(State(repo.clone()), Path("test".to_string()))
                 .await
-                .unwrap().name,
+                .unwrap()
+                .name,
             Json(NamespaceData {
                 name: NamespaceIdent(vec!["test".to_string()]),
                 properties: json!({"property2": "value2"}),
-            }).name
+            })
+            .name
         );
 
         // Test drop_namespace
