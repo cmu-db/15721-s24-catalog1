@@ -1,0 +1,3 @@
+thread 'main' panicked at src/main.rs:18:40:
+called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: "IO error: While lock file: rocksdb/LOCK: Resource temporarily unavailable" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
