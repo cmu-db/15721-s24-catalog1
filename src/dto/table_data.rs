@@ -69,16 +69,26 @@ mod tests {
     #[test]
     fn test_table_metadata() {
         let table_uuid = "uuid".to_string();
-        let table_metadata = TableMetadata { table_uuid: table_uuid.clone() };
+        let table_metadata = TableMetadata {
+            table_uuid: table_uuid.clone(),
+        };
 
         assert_eq!(table_metadata.table_uuid, table_uuid);
     }
 
     #[test]
     fn test_table() {
-        let id = TableIdent::new(NamespaceIdent(vec!["namespace".to_string()]), "table".to_string());
-        let metadata = TableMetadata { table_uuid: "uuid".to_string() };
-        let table = Table { id: id.clone(), metadata: metadata.clone() };
+        let id = TableIdent::new(
+            NamespaceIdent(vec!["namespace".to_string()]),
+            "table".to_string(),
+        );
+        let metadata = TableMetadata {
+            table_uuid: "uuid".to_string(),
+        };
+        let table = Table {
+            id: id.clone(),
+            metadata: metadata.clone(),
+        };
 
         assert_eq!(table.id, id);
         assert_eq!(table.metadata, metadata);
@@ -86,7 +96,10 @@ mod tests {
 
     #[test]
     fn test_table_ident_serialization() {
-        let table_ident = TableIdent::new(NamespaceIdent(vec!["namespace".to_string()]), "table".to_string());
+        let table_ident = TableIdent::new(
+            NamespaceIdent(vec!["namespace".to_string()]),
+            "table".to_string(),
+        );
         let serialized = serde_json::to_string(&table_ident).unwrap();
 
         assert!(serialized.contains("namespace"));
