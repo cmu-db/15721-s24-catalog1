@@ -87,6 +87,7 @@ NAMESPACE_ENDPOINT = "namespaces"
 TABLE_ENDPOINT = "tables"
 namespaces = []
 table_per_namespace = args.table_num // args.namespace_num
+i = 0
 for i in range(args.namespace_num):
     namespace = get_random_str(32)
     tables = []
@@ -96,7 +97,6 @@ for i in range(args.namespace_num):
     # create namespace
     response = requests.post(f"{args.base_url}/{NAMESPACE_ENDPOINT}",
                              json={'name': [str(namespace)], "properties": {'foo': 'bar'}})
-    print(response.status_code)
     assert True, f"Failed to create namespace {namespace}"
 
     # crate tables
@@ -106,6 +106,8 @@ for i in range(args.namespace_num):
             json={'name': table}
         )
         assert response.status_code == 201, f"Failed to create Table {table}"
+        print(i)
+        i += 1
 
 print(f"Seeded {len(namespaces)} namespaces and {len(namespaces) * table_per_namespace} tables.")
 
@@ -136,31 +138,29 @@ for name, target in targets.items():
 # ... more?
 # 2. random endpoint stress test
 # Define the file path
-PATH_TARGET_FILE = f"{TEST_ROOT_DIR}/requests_get_table.txt"
-
 # Write the URLs to the file
-with open(PATH_TARGET_FILE, "w") as file:
+PATH_TARGET_FILE = rf"{TEST_ROOT_DIR}\targets.txt"
+with open(PATH_TARGET_FILE, "w", newline="\r\n") as file:
     for i in range(len(namespaces)):
         random_namespace = random.choice(namespaces)
         random_table = random.choice(random_namespace['tables'])
-
         # Generate request URL
         target = f"{args.base_url}/{NAMESPACE_ENDPOINT}/{random_namespace['name']}/{TABLE_ENDPOINT}/{random_table}"
         request_url = f"GET {target}"
+        file.write(request_url + "\r\n")
+print(f"URLs have been written to {PATH_TARGET_FILE}")
 
-        file.write(request_url + "\n")
+STATISTIC_FILE = rf"{TEST_ROOT_DIR}\results_random.bin"
+attack_cmd = f"vegeta attack -targets={PATH_TARGET_FILE} -rate={args.rate} -duration=60s > {STATISTIC_FILE}"
+report_cmd = f"type {STATISTIC_FILE} | vegeta report"
 
-print("URLs have been written to", PATH_TARGET_FILE)
+with open(rf"{TEST_ROOT_DIR}\vegeta_random.log", "w", encoding='utf-8') as f:
+    sp.run(attack_cmd, shell=True, stdout=f, stderr=sp.STDOUT)
+    sp.run(report_cmd, shell=True, stdout=f, stderr=sp.STDOUT)
 
-
-STATISTIC_FILE = f"{TEST_ROOT_DIR}/results_random.bin"
-attack = f"vegeta attack -targets={PATH_TARGET_FILE} -rate={args.rate} -duration=60s | tee {STATISTIC_FILE} | vegeta report"
-run(attack, note="random endpoints stress test",
-    out=f"{TEST_ROOT_DIR}/vegeta_random.log")
 if args.plot:
-    PLOT_FILE = f"{TEST_ROOT_DIR}/plot_random.html"
-    run(f"cat {STATISTIC_FILE} | vegeta plot > {PLOT_FILE}",
-        note="generating plot")
-
+    PLOT_FILE = rf"{TEST_ROOT_DIR}\plot_random.html"
+    plot_cmd = f"type {STATISTIC_FILE} | vegeta plot > {PLOT_FILE}"
+    sp.run(plot_cmd, shell=True)
 # clean up
 catalog_server.send_signal(signal.SIGINT)
