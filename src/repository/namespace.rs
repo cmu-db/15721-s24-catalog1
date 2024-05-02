@@ -100,3 +100,65 @@ impl NamespaceRepository {
 fn current_time() -> String {
     "current_time".to_string()
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::{Arc, Mutex};
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_namespace_repository() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+        let db = Arc::new(Mutex::new(db));
+        let repo = NamespaceRepository::new(db.clone());
+
+        // Test create_namespace
+        let namespace_ident = NamespaceIdent(vec!["test".to_string()]);
+        let properties = Some(json!({"property1": "value1"}));
+        repo.create_namespace(namespace_ident.clone(), properties).unwrap();
+
+        // Test namespace_exists
+        assert!(repo.namespace_exists(&namespace_ident).unwrap());
+
+        // Test load_namespace
+        let namespace_data = repo.load_namespace(&namespace_ident).unwrap().unwrap();
+        assert_eq!(namespace_data.name, namespace_ident);
+        assert_eq!(namespace_data.properties, json!({"property1": "value1"}));
+
+        // Test set_namespace_properties
+        let removals = vec!["property1".to_string()];
+        let mut updates = Map::new();
+        updates.insert("property2".to_string(), json!("value2"));
+        repo.set_namespace_properties(namespace_ident.clone(), removals, updates).unwrap();
+
+        let updated_namespace_data = repo.load_namespace(&namespace_ident).unwrap().unwrap();
+        assert_eq!(updated_namespace_data.properties, json!({"property2": "value2"}));
+
+        // Test delete_namespace
+        repo.delete_namespace(&namespace_ident).unwrap();
+        assert!(!repo.namespace_exists(&namespace_ident).unwrap());
+    }
+
+    #[test]
+    fn test_namespace_repository_negative() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+        let db = Arc::new(Mutex::new(db));
+        let repo = NamespaceRepository::new(db.clone());
+
+        // Test namespace_exists with non-existent namespace
+        let non_existent_namespace = NamespaceIdent(vec!["non_existent".to_string()]);
+        assert!(!repo.namespace_exists(&non_existent_namespace).unwrap());
+
+        // Test load_namespace with non-existent namespace
+        assert!(repo.load_namespace(&non_existent_namespace).unwrap().is_none());
+
+        // Test set_namespace_properties with non-existent namespace
+        let mut updates = Map::new();
+        updates.insert("property2".to_string(), json!("value2"));
+        assert!(repo.set_namespace_properties(non_existent_namespace.clone(), vec![], updates).is_err());
+    }
+}
