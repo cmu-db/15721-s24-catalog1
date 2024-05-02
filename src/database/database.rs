@@ -152,7 +152,7 @@ mod tests {
         let db = Database::open(db_path).unwrap();
 
         // Test insert
-        let key : String = "key1".to_string();
+        let key: String = "key1".to_string();
         let value = "value1";
         db.insert("NamespaceData", &key, &value).unwrap();
 
@@ -187,7 +187,8 @@ mod tests {
 
         // Test update with non-existing key
         let updated_value = "updated_value1";
-        db.update("NamespaceData", &non_existing_key, &updated_value).unwrap();
+        db.update("NamespaceData", &non_existing_key, &updated_value)
+            .unwrap();
         let retrieved_value: Option<String> = db.get("NamespaceData", &non_existing_key).unwrap();
         assert_eq!(retrieved_value, Some(updated_value.to_string()));
 
@@ -210,4 +211,3 @@ mod tests {
         assert!(result.is_err());
     }
 }
-
