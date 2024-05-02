@@ -160,6 +160,19 @@ mod tests {
             StatusCode::CREATED
         );
 
+        // Test create_table with existing table
+        assert_eq!(
+            create_table(
+                State(repo.clone()),
+                Path("test".to_string()),
+                table_creation.clone()
+            )
+            .await
+            .unwrap_err()
+            .0,
+            StatusCode::CONFLICT
+        );
+
         // Test table_exists
         assert_eq!(
             table_exists(
@@ -210,6 +223,32 @@ mod tests {
             StatusCode::NO_CONTENT
         );
 
+        // Test rename_table with non-existent source table
+        let rename_request = Json(TableRenameRequest {
+            source: TableIdent::new(namespace_ident.clone(), "non_existent".to_string()),
+            destination: TableIdent::new(namespace_ident.clone(), "table3".to_string()),
+        });
+        assert_eq!(
+            rename_table(State(repo.clone()), rename_request.clone())
+                .await
+                .unwrap_err()
+                .0,
+            StatusCode::NOT_FOUND
+        );
+
+        // Test rename_table with existing destination table
+        let rename_request = Json(TableRenameRequest {
+            source: TableIdent::new(namespace_ident.clone(), "table2".to_string()),
+            destination: TableIdent::new(namespace_ident.clone(), "table2".to_string()),
+        });
+        assert_eq!(
+            rename_table(State(repo.clone()), rename_request.clone())
+                .await
+                .unwrap_err()
+                .0,
+            StatusCode::CONFLICT
+        );
+
         // Test delete_table
         assert_eq!(
             delete_table(
@@ -227,6 +266,18 @@ mod tests {
             )
             .await
             .unwrap(),
+            StatusCode::NOT_FOUND
+        );
+
+        // Test delete_table with non-existent table
+        assert_eq!(
+            delete_table(
+                State(repo.clone()),
+                Path(("test".to_string(), "non_existent".to_string()))
+            )
+            .await
+            .unwrap_err()
+            .0,
             StatusCode::NOT_FOUND
         );
     }
