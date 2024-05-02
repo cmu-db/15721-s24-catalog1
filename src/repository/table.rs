@@ -1,7 +1,7 @@
 use crate::database::database::Database;
+use crate::dto::namespace_data::{NamespaceData, NamespaceIdent};
 use crate::dto::rename_request::TableRenameRequest;
-use crate::dto::table_data::{TableIdent, TableCreation, Table, TableMetadata};
-use crate::dto::namespace_data::{NamespaceIdent, NamespaceData};
+use crate::dto::table_data::{Table, TableCreation, TableIdent, TableMetadata};
 use std::io::{Error, ErrorKind};
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
@@ -15,9 +15,12 @@ impl TableRepository {
         Self { database }
     }
 
-    pub fn list_all_tables(&self, namespace: &NamespaceIdent) -> Result<Option<Vec<TableIdent>>, Error> {
+    pub fn list_all_tables(
+        &self,
+        namespace: &NamespaceIdent,
+    ) -> Result<Option<Vec<TableIdent>>, Error> {
         let db = self.database.lock().unwrap();
-        let _ : NamespaceData = match db.get("NamespaceData", namespace)? {
+        let _: NamespaceData = match db.get("NamespaceData", namespace)? {
             Some(data) => data,
             None => {
                 return Err(std::io::Error::new(
@@ -29,9 +32,13 @@ impl TableRepository {
         db.get::<NamespaceIdent, Vec<TableIdent>>("TableNamespaceMap", namespace)
     }
 
-    pub fn create_table(&self, namespace: &NamespaceIdent, table_creation: &TableCreation) -> Result<(), Error> {
+    pub fn create_table(
+        &self,
+        namespace: &NamespaceIdent,
+        table_creation: &TableCreation,
+    ) -> Result<(), Error> {
         let db = self.database.lock().unwrap();
-        let _ : NamespaceData = match db.get("NamespaceData", namespace)? {
+        let _: NamespaceData = match db.get("NamespaceData", namespace)? {
             Some(data) => data,
             None => {
                 return Err(std::io::Error::new(
@@ -42,12 +49,10 @@ impl TableRepository {
         };
 
         let table_id = TableIdent::new(namespace.clone(), table_creation.name.clone());
-        let table_uuid = Uuid::new_v4().to_string(); 
-        
-        let table_metadata = TableMetadata{
-            table_uuid
-        };
-        
+        let table_uuid = Uuid::new_v4().to_string();
+
+        let table_metadata = TableMetadata { table_uuid };
+
         let mut tables = db
             .get::<NamespaceIdent, Vec<TableIdent>>("TableNamespaceMap", namespace)
             .unwrap()
@@ -56,16 +61,26 @@ impl TableRepository {
         if tables.contains(&table_id) {
             return Err(std::io::Error::new(
                 ErrorKind::AlreadyExists,
-                format!("Table {} already exists in namespace {}", table_creation.name, namespace.clone().0.join("\u{1F}")),
-            ))
+                format!(
+                    "Table {} already exists in namespace {}",
+                    table_creation.name,
+                    namespace.clone().0.join("\u{1F}")
+                ),
+            ));
         }
 
-        db.insert("TableData", &table_id, &Table{id: table_id.clone(), metadata: table_metadata})?;
+        db.insert(
+            "TableData",
+            &table_id,
+            &Table {
+                id: table_id.clone(),
+                metadata: table_metadata,
+            },
+        )?;
         tables.push(table_id.clone());
         let r_val = db.insert("TableNamespaceMap", namespace, &tables);
         r_val
     }
-
 
     pub fn load_table(
         &self,
@@ -82,7 +97,7 @@ impl TableRepository {
         let db = self.database.lock().unwrap();
         let table_id = TableIdent::new(namespace.clone(), table_name.clone());
 
-        let _ : Table = match db.get::<TableIdent, Table>("TableData", &table_id)? {
+        let _: Table = match db.get::<TableIdent, Table>("TableData", &table_id)? {
             Some(data) => data,
             None => {
                 return Err(std::io::Error::new(
@@ -101,7 +116,11 @@ impl TableRepository {
         db.insert("TableNamespaceMap", namespace, &tables)
     }
 
-    pub fn table_exists(&self, namespace: &NamespaceIdent, table_name: String) -> Result<bool, Error> {
+    pub fn table_exists(
+        &self,
+        namespace: &NamespaceIdent,
+        table_name: String,
+    ) -> Result<bool, Error> {
         let table = self.load_table(namespace, table_name)?;
         Ok(table.is_some())
     }
@@ -116,14 +135,21 @@ impl TableRepository {
             .ok_or_else(|| Error::new(ErrorKind::NotFound, "Source table not found"))?;
 
         if self.table_exists(&destination.namespace, destination.name.clone())? {
-            return Err(Error::new(ErrorKind::AlreadyExists, "Destination table already exists"));
+            return Err(Error::new(
+                ErrorKind::AlreadyExists,
+                "Destination table already exists",
+            ));
         }
 
         let mut new_table = table.clone();
         new_table.id = destination.clone();
 
-        self.create_table(&destination.namespace.clone(), &TableCreation{name: destination.name.clone()})?;
+        self.create_table(
+            &destination.namespace.clone(),
+            &TableCreation {
+                name: destination.name.clone(),
+            },
+        )?;
         self.drop_table(&namespace, source.name.clone())
     }
 }
-

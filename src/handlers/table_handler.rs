@@ -1,12 +1,12 @@
+use crate::dto::namespace_data::NamespaceIdent;
 use crate::dto::rename_request::TableRenameRequest;
-use crate::dto::table_data::{TableIdent, TableCreation, Table};
+use crate::dto::table_data::{Table, TableCreation, TableIdent};
 use crate::repository::table::TableRepository;
-use crate::dto::namespace_data::{NamespaceIdent};
 use axum::{
     extract::{Json, Path, State},
     http::StatusCode,
 };
-use std::io::{ ErrorKind};
+use std::io::ErrorKind;
 use std::sync::Arc;
 
 pub async fn list_tables(
@@ -62,7 +62,10 @@ pub async fn load_table(
 
     match repo.load_table(&id, table.clone()) {
         Ok(Some(table_data)) => Ok(Json(table_data)),
-        Ok(None) => Err((StatusCode::NOT_FOUND, format!("Table {} not found", table.clone()))),
+        Ok(None) => Err((
+            StatusCode::NOT_FOUND,
+            format!("Table {} not found", table.clone()),
+        )),
         Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
     }
 }
@@ -82,7 +85,7 @@ pub async fn delete_table(
         Err(e) => match e.kind() {
             ErrorKind::NotFound => Err((StatusCode::NOT_FOUND, format!("Error: {}", e))),
             _ => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
-        }
+        },
     }
 }
 
@@ -117,4 +120,3 @@ pub async fn rename_table(
         },
     }
 }
-

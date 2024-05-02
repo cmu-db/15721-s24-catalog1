@@ -24,8 +24,11 @@ pub async fn list_namespaces(
                 "namespaces": namespaces
             });
             Ok(Json(json_object))
-        },
-        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Internal server error: {}", e)))
+        }
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Internal server error: {}", e),
+        )),
     }
 }
 
@@ -33,7 +36,6 @@ pub async fn create_namespace(
     State(repo): State<Arc<NamespaceRepository>>,
     new_namespace: Json<NamespaceData>,
 ) -> Result<Json<NamespaceData>, (StatusCode, String)> {
-
     if repo.namespace_exists(new_namespace.get_name()).unwrap() {
         return Err((StatusCode::CONFLICT, format!("namespace already exists")));
     }
@@ -123,8 +125,7 @@ pub async fn set_namespace_properties(
     }
 
     // Check if a property key was included in both `removals` and `updates`
-    
-    
+
     repo.set_namespace_properties(
         id,
         request_body.removals.clone(),

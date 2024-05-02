@@ -3,23 +3,21 @@ use std::fmt::Debug;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NamespaceNotFoundError {
-  pub message: String,
+    pub message: String,
 }
-
 
 impl From<NamespaceNotFoundError> for IcebergErrorResponse {
-  fn from(err: NamespaceNotFoundError) -> Self {
-    IcebergErrorResponse {
-      error: ErrorModel {
-        message: err.message,
-        r#type: "NamespaceNotFound".to_string(),
-        code: 404, 
-        stack: None,
-      },
+    fn from(err: NamespaceNotFoundError) -> Self {
+        IcebergErrorResponse {
+            error: ErrorModel {
+                message: err.message,
+                r#type: "NamespaceNotFound".to_string(),
+                code: 404,
+                stack: None,
+            },
+        }
     }
-  }
 }
-
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ErrorModel {
@@ -58,7 +56,7 @@ pub enum ErrorTypes {
     Unauthorized(String),
     ServiceUnavailable(String),
     ServerError(String),
-    NamespaceNotFound(String)
+    NamespaceNotFound(String),
 }
 
 impl std::fmt::Display for ErrorTypes {

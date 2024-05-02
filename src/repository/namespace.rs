@@ -100,4 +100,3 @@ impl NamespaceRepository {
 fn current_time() -> String {
     "current_time".to_string()
 }
-

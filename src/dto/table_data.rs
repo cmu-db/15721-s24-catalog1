@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use typed_builder::TypedBuilder;
 // use std::collections::HashMap;
 
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Table {
     pub id: TableIdent,
@@ -27,7 +26,6 @@ impl TableIdent {
     }
 }
 
-
 #[derive(Serialize, Deserialize, Debug, TypedBuilder)]
 pub struct TableCreation {
     /// The name of the table.
@@ -39,8 +37,8 @@ pub struct TableCreation {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TableMetadata {
-  pub table_uuid: String,
-//   pub file_urls: Option<Vec<String>>,
-//   pub columns: Option<Vec<ColumnData>>,
-//   pub properties: Option<HashMap<String, String>>,
+    pub table_uuid: String,
+    //   pub file_urls: Option<Vec<String>>,
+    //   pub columns: Option<Vec<ColumnData>>,
+    //   pub properties: Option<HashMap<String, String>>,
 }
