@@ -101,7 +101,6 @@ fn current_time() -> String {
     "current_time".to_string()
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -118,7 +117,8 @@ mod tests {
         // Test create_namespace
         let namespace_ident = NamespaceIdent(vec!["test".to_string()]);
         let properties = Some(json!({"property1": "value1"}));
-        repo.create_namespace(namespace_ident.clone(), properties).unwrap();
+        repo.create_namespace(namespace_ident.clone(), properties)
+            .unwrap();
 
         // Test namespace_exists
         assert!(repo.namespace_exists(&namespace_ident).unwrap());
@@ -132,10 +132,14 @@ mod tests {
         let removals = vec!["property1".to_string()];
         let mut updates = Map::new();
         updates.insert("property2".to_string(), json!("value2"));
-        repo.set_namespace_properties(namespace_ident.clone(), removals, updates).unwrap();
+        repo.set_namespace_properties(namespace_ident.clone(), removals, updates)
+            .unwrap();
 
         let updated_namespace_data = repo.load_namespace(&namespace_ident).unwrap().unwrap();
-        assert_eq!(updated_namespace_data.properties, json!({"property2": "value2"}));
+        assert_eq!(
+            updated_namespace_data.properties,
+            json!({"property2": "value2"})
+        );
 
         // Test delete_namespace
         repo.delete_namespace(&namespace_ident).unwrap();
@@ -154,11 +158,16 @@ mod tests {
         assert!(!repo.namespace_exists(&non_existent_namespace).unwrap());
 
         // Test load_namespace with non-existent namespace
-        assert!(repo.load_namespace(&non_existent_namespace).unwrap().is_none());
+        assert!(repo
+            .load_namespace(&non_existent_namespace)
+            .unwrap()
+            .is_none());
 
         // Test set_namespace_properties with non-existent namespace
         let mut updates = Map::new();
         updates.insert("property2".to_string(), json!("value2"));
-        assert!(repo.set_namespace_properties(non_existent_namespace.clone(), vec![], updates).is_err());
+        assert!(repo
+            .set_namespace_properties(non_existent_namespace.clone(), vec![], updates)
+            .is_err());
     }
 }
