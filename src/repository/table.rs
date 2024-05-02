@@ -81,6 +81,17 @@ impl TableRepository {
     pub fn drop_table(&self, namespace: &NamespaceIdent, table_name: String) -> Result<(), Error> {
         let db = self.database.lock().unwrap();
         let table_id = TableIdent::new(namespace.clone(), table_name.clone());
+        
+        let _ : Table = match db.get::<TableIdent, Table>("TableData", &table_id)? {
+            Some(data) => data,
+            None => {
+                return Err(std::io::Error::new(
+                    ErrorKind::NotFound,
+                    format!("Namespace {} not found", namespace.clone().0.join("\u{1F}")),
+                ))
+            }
+        };
+
         db.delete("TableData", &table_id)?;
         let mut tables = db
             .get::<NamespaceIdent, Vec<TableIdent>>("TableNamespaceMap", namespace)

@@ -77,9 +77,13 @@ pub async fn delete_table(
             .map(|part| part.to_string())
             .collect(),
     );
-    repo.drop_table(&id, table)
-        .map(|_| StatusCode::NO_CONTENT)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+    match repo.drop_table(&id, table) {
+        Ok(_) => Ok(StatusCode::NO_CONTENT),
+        Err(e) => match e.kind() {
+            ErrorKind::NotFound => Err((StatusCode::NOT_FOUND, format!("Error: {}", e))),
+            _ => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
+        }
+    }
 }
 
 pub async fn table_exists(
@@ -93,7 +97,8 @@ pub async fn table_exists(
             .collect(),
     );
     match repo.table_exists(&id, table) {
-        Ok(true) => Ok(StatusCode::FOUND),
+        // Ideally this should be FOUND but Iceberg spec says 204
+        Ok(true) => Ok(StatusCode::NO_CONTENT),
         Ok(false) => Ok(StatusCode::NOT_FOUND),
         Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
     }
@@ -103,6 +108,7 @@ pub async fn rename_table(
     State(repo): State<Arc<TableRepository>>,
     request: Json<TableRenameRequest>,
 ) -> Result<StatusCode, (StatusCode, String)> {
+    
     repo.rename_table(&request)
         .map(|_| StatusCode::OK)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
