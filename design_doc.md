@@ -102,110 +102,11 @@ Performance tuning is crucial for the efficiency and speed of our catalog servic
 
 **Command to run benchmark script**
 ```sh
-python3 benchmarking/bench.py -b catalog1 -d ../rocksdb -u http://localhost:3000 -n 100 -t 1000 -r 1000 -p
+python3 benchmark_copy/bench.py -b catalog1 -d ../rocksdb -u http://localhost:3000 -n 100 -t 10000 -r 50 -p
 ```
+#### Host Specs
+### Results
 
-### Windows 
-#### Host Specifications
-```
-OS: Windows 11 Home x86_64
-Host: HP OMEN Laptop 15-en0xxx
-Kernel: 10.0.22631
-CPU: AMD Ryzen 7 4800H with Radeon Graphics (16) @ 2.900GHz
-GPU: Caption
-GPU: AMD Radeon(TM) Graphics
-GPU: NVIDIA GeForce GTX 1660 Ti
-Memory: 13769MiB / 15731MiB
-```
-#### Get Namespace API
-```
-Requests      [total, rate, throughput]  9991, 999.20, 999.20
-Duration      [total, attack, wait]      9.9989534s, 9.9989534s, 0s
-Latencies     [mean, 50, 95, 99, max]    860.52µs, 972.607µs, 1.452413ms, 2.987446ms, 37.2744ms
-```
-![](./test_results/windows/get_namespace.png)
-
-#### Get Table API
-```
-Requests      [total, rate, throughput]  10000, 999.55, 999.55
-Duration      [total, attack, wait]      10.004488s, 10.004488s, 0s
-Latencies     [mean, 50, 95, 99, max]    865.783µs, 972.728µs, 1.418071ms, 3.01372ms, 37.3176ms
-```
-![](./test_results/windows/get_table.png)
-
-#### List Namespace API
-```
-Requests      [total, rate, throughput]  10000, 1001.10, 1001.05
-Duration      [total, attack, wait]      9.9895398s, 9.9890283s, 511.5µs
-Latencies     [mean, 50, 95, 99, max]    1.883553ms, 1.191091ms, 5.006752ms, 8.196381ms, 43.6933ms
-```
-![](./test_results/windows/list_namespace.png)
-
-#### List Tables API
-```
-Requests      [total, rate, throughput]  9992, 999.50, 999.50
-Duration      [total, attack, wait]      9.9970348s, 9.9970348s, 0s
-Latencies     [mean, 50, 95, 99, max]    971.232µs, 973.659µs, 1.978657ms, 3.292131ms, 45.7625ms
-```
-![](./test_results/windows/list_table.png)
-
-#### Random Testing
-```
-Requests      [total, rate, throughput]  59995, 1000.02, 1000.02
-Duration      [total, attack, wait]      59.9940374s, 59.9940374s, 0s
-Latencies     [mean, 50, 95, 99, max]    526.566µs, 522.409µs, 1.027574ms, 2.010563ms, 23.165ms
-```
-![](./test_results/windows/random.png)
-### MacBook Air M1 
-#### Host Specifications
-```
-OS: macOS 14.4.1 23E224 arm64 
-Host: MacBookAir10,1 
-Kernel: 23.4.0 
-WM: Quartz Compositor 
-WM Theme: Blue (Dark) 
-Terminal: vscode 
-CPU: Apple M1 
-GPU: Apple M1 
-Memory: 1514MiB / 8192MiB 
-```
-
-#### Get Namespace API
-```
-Requests      [total, rate, throughput]         10000, 1000.10, 1000.08
-Duration      [total, attack, wait]             9.999s, 9.999s, 213µs
-Latencies     [min, mean, 50, 90, 95, 99, max]  65.833µs, 191.877µs, 196.477µs, 243.657µs, 256.028µs, 305.26µs, 1.578ms
-
-```
-![](./test_results/mac/get_namespcae.png)
-#### Get Table API
-```
-Requests      [total, rate, throughput]         10000, 1000.10, 999.27
-Duration      [total, attack, wait]             9.999s, 9.999s, 268.708µs
-Latencies     [min, mean, 50, 90, 95, 99, max]  70.166µs, 221.648µs, 223.806µs, 262.714µs, 279.431µs, 394.982µs, 6.708ms
-```
-![](./test_results/mac/get_table.png)
-#### List Namespace API
-```
-Requests      [total, rate, throughput]         10000, 1000.11, 999.16
-Duration      [total, attack, wait]             9.999s, 9.999s, 498.75µs
-Latencies     [min, mean, 50, 90, 95, 99, max]  272.708µs, 478.628µs, 452.66µs, 580.816µs, 605.989µs, 726.08µs, 18.557ms
-```
-![](./test_results/mac/list_namespace.png)
-#### List Tables API
-```
-Requests      [total, rate, throughput]         10000, 1000.10, 999.97
-Duration      [total, attack, wait]             9.999s, 9.999s, 254.458µs
-Latencies     [min, mean, 50, 90, 95, 99, max]  73.625µs, 235.993µs, 249.85µs, 283.297µs, 296.26µs, 365.961µs, 1.97ms
-```
-![](./test_results/mac/list_tables.png)
-#### Random Testing
-```
-Requests      [total, rate, throughput]         60000, 1000.02, 999.93
-Duration      [total, attack, wait]             59.999s, 59.999s, 86.666µs
-Latencies     [min, mean, 50, 90, 95, 99, max]  54.708µs, 186.655µs, 171.961µs, 252.694µs, 278.067µs, 429.093µs, 14.688ms
-```
-![](./test_results/mac/random.png)
 ### References
 
 [1] https://www.snowflake.com/blog/how-foundationdb-powers-snowflake-metadata-forward/
