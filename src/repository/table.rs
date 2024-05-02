@@ -17,6 +17,15 @@ impl TableRepository {
 
     pub fn list_all_tables(&self, namespace: &NamespaceIdent) -> Result<Option<Vec<TableIdent>>, Error> {
         let db = self.database.lock().unwrap();
+        let _ : NamespaceData = match db.get("NamespaceData", namespace)? {
+            Some(data) => data,
+            None => {
+                return Err(std::io::Error::new(
+                    ErrorKind::NotFound,
+                    format!("Namespace {} not found", namespace.clone().0.join("\u{1F}")),
+                ))
+            }
+        };
         db.get::<NamespaceIdent, Vec<TableIdent>>("TableNamespaceMap", namespace)
     }
 

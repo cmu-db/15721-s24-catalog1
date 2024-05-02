@@ -6,6 +6,7 @@ use axum::{
     extract::{Json, Path, State},
     http::StatusCode,
 };
+use std::io::{ ErrorKind};
 use std::sync::Arc;
 
 pub async fn list_tables(
@@ -18,9 +19,13 @@ pub async fn list_tables(
             .map(|part| part.to_string())
             .collect(),
     );
-    repo.list_all_tables(&id)
-        .map(|tables| Json(tables.unwrap_or_default()))
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+    match repo.list_all_tables(&id) {
+        Ok(tables) => Ok(Json(tables.unwrap_or_default())),
+        Err(e) => match e.kind() {
+            ErrorKind::NotFound => Err((StatusCode::NOT_FOUND, format!("Error: {}", e))),
+            _ => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
+        },
+    }
 }
 
 pub async fn create_table(
@@ -34,9 +39,14 @@ pub async fn create_table(
             .map(|part| part.to_string())
             .collect(),
     );
-    repo.create_table(&id, &table)
-        .map(|_| StatusCode::CREATED)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+    match repo.create_table(&id, &table) {
+        Ok(_) => Ok(StatusCode::CREATED),
+        Err(e) => match e.kind() {
+            ErrorKind::NotFound => Err((StatusCode::NOT_FOUND, format!("Error: {}", e))),
+            ErrorKind::AlreadyExists => Err((StatusCode::CONFLICT, format!("Error: {}", e))),
+            _ => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
+        },
+    }
 }
 
 pub async fn load_table(
