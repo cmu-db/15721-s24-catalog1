@@ -11,9 +11,7 @@ use std::sync::Arc;
 
 /*
     TODO:
-    if a namespace or table already exists, you might want to return a StatusCode::CONFLICT
-    instead of StatusCode::INTERNAL_SERVER_ERROR. Similarly, if a namespace or table is not found,
-    you might want to return a StatusCode::NOT_FOUND.
+    Parent Namespace
 */
 pub async fn list_namespaces(
     State(repo): State<Arc<NamespaceRepository>>,
