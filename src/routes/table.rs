@@ -22,19 +22,15 @@ pub fn routes(db: Arc<Mutex<Database>>) -> Router {
             "/namespaces/:namespace/tables/:table",
             get(table_handler::load_table),
         )
-//         .route(
-//             "/namespaces/:namespace/tables/:table",
-//             delete(table_handler::delete_table),
-//         )
-//         .route(
-//             "/namespaces/:namespace/tables/:table",
-//             head(table_handler::table_exists),
-//         )
-//         .route("/tables/rename", post(table_handler::rename_table))
-//         .route(
-//             "/namespaces/:namespace/tables/:table/metrics",
-//             post(table_handler::report_metrics),
-//         )
+        .route(
+            "/namespaces/:namespace/tables/:table",
+            delete(table_handler::delete_table),
+        )
+        .route(
+            "/namespaces/:namespace/tables/:table",
+            head(table_handler::table_exists),
+        )
+        // .route("/tables/rename", post(table_handler::rename_table))
         .with_state(repo);
 
     return router;

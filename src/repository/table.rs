@@ -71,21 +71,22 @@ impl TableRepository {
         db.get::<TableIdent, Table>("TableData", &table_id)
     }
 
-    // pub fn drop_table(&self, namespace: &str, table_name: &str) -> Result<(), Error> {
-    //     let db = self.database.lock().unwrap();
-    //     db.delete("TableData", table_name)?;
-    //     let mut tables = db
-    //         .get::<Vec<String>>("TableNamespaceMap", namespace)
-    //         .unwrap()
-    //         .unwrap();
-    //     tables.retain(|name| name != table_name);
-    //     db.insert("TableNamespaceMap", namespace, &tables)
-    // }
+    pub fn drop_table(&self, namespace: &NamespaceIdent, table_name: String) -> Result<(), Error> {
+        let db = self.database.lock().unwrap();
+        let table_id = TableIdent::new(namespace.clone(), table_name.clone());
+        db.delete("TableData", &table_id)?;
+        let mut tables = db
+            .get::<NamespaceIdent, Vec<TableIdent>>("TableNamespaceMap", namespace)
+            .unwrap()
+            .unwrap();
+        tables.retain(|id| id.name != table_name);
+        db.insert("TableNamespaceMap", namespace, &tables)
+    }
 
-    // pub fn table_exists(&self, namespace: &str, table_name: &str) -> Result<bool, Error> {
-    //     let table = self.load_table(namespace, table_name)?;
-    //     Ok(table.is_some())
-    // }
+    pub fn table_exists(&self, namespace: &NamespaceIdent, table_name: String) -> Result<bool, Error> {
+        let table = self.load_table(namespace, table_name)?;
+        Ok(table.is_some())
+    }
 
     // pub fn rename_table(&self, rename_request: &TableRenameRequest) -> Result<(), Error> {
     //     let namespace = &rename_request.namespace;
@@ -95,7 +96,7 @@ impl TableRepository {
     //         .load_table(namespace, old_name)?
     //         .ok_or_else(|| Error::new(ErrorKind::NotFound, "Table not found"))?;
     //     let mut new_table = table.clone();
-    //     new_table.name = new_name.clone();
+    //     new_table.id.name = new_name.clone();
     //     self.drop_table(namespace, old_name)?;
     //     self.create_table(namespace, &new_table)
     // }
