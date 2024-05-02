@@ -144,8 +144,6 @@ mod tests {
     #[tokio::test]
     async fn test_namespace_endpoints() {
         let dir = tempdir().unwrap();
-        let db = Database::open(dir.path()).unwrap();
-        let db = Arc::new(Mutex::new(db));
         let repo = Arc::new(NamespaceRepository::new(Arc::new(Mutex::new(
             Database::open(tempdir().unwrap().path()).unwrap(),
         ))));
