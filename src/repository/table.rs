@@ -1,6 +1,5 @@
 use crate::database::database::Database;
 use crate::dto::rename_request::TableRenameRequest;
-use crate::dto::column_data::ColumnData;
 use crate::dto::table_data::{TableIdent, TableCreation, Table, TableMetadata};
 use crate::dto::namespace_data::{NamespaceIdent, NamespaceData};
 use std::io::{Error, ErrorKind};
@@ -23,7 +22,7 @@ impl TableRepository {
 
     pub fn create_table(&self, namespace: &NamespaceIdent, table_creation: &TableCreation) -> Result<(), Error> {
         let db = self.database.lock().unwrap();
-        let namespace_data : NamespaceData = match db.get("NamespaceData", namespace)? {
+        let _ : NamespaceData = match db.get("NamespaceData", namespace)? {
             Some(data) => data,
             None => {
                 return Err(std::io::Error::new(

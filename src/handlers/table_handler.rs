@@ -1,5 +1,5 @@
 use crate::dto::rename_request::TableRenameRequest;
-use crate::dto::table_data::{TableIdent, TableCreation, TableMetadata, Table};
+use crate::dto::table_data::{TableIdent, TableCreation, Table};
 use crate::repository::table::TableRepository;
 use crate::dto::namespace_data::{NamespaceIdent};
 use axum::{
