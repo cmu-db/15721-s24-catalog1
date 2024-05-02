@@ -29,42 +29,6 @@ A Rust application that exposes a REST API to modify database metadata of the OL
 
 We choose RocksDB as the database in the catalog to store metadata. It is a fast and persistent key-value store that can be used as an embedded database for Rust applications.
 
-##### RocksDB Schema
-
-Column Families
-
-We use column families for a logical separation and grouping of the metadata store. The
-
-- Table Data
-  - Name - string (key)
-  - Number of columns - u64
-  - Read properties - json
-  - Write properties - json
-  - File URLs array - string array
-  - Columns arrays, for each column
-    - Aggregates - json object
-    - Range of values - int pair
-      - Lower bound
-      - Upper bound
-    - name - string
-    - isStrongKey - boolean
-    - isWeakKey - boolean
-  - Primary Key col name
-- Namespace Data
-  - Name - string (key)
-  - Properties - json object
-- Operator statistics
-  - Operator string - string (key)
-  - Cardinality of prev result - u64
-
-#### Tuning/Configuration options
-
-The catalog can be passed a configuration file at bootstrap with the following configuration options:
-
-1. data-warehouse-location
-2. client-pool-size
-3. cache-enabled
-4. cache-expiration-interval
 
 ## Design Rationale
 
@@ -104,30 +68,17 @@ A detailed description of how you are going to determine that your implementatio
 
 For the correctness of the catalog, we plan to conduct unit tests and regression tests. In unit testing, we will test key components and operations such as metadata retrieval, metadata storage, update, and snapshot isolation.
 
-Basic unit tests for handler functions are underway.
-
-#### Regression tests
-
-Currently, we plan to conduct regression tests on
-
-1. Concurrency and parallelism to ensure data integrity
-2. Correctness of all the APIs in API spec documentation.
-3. Failure Scenarios: Test the behavior and performance under failure scenarios, such as network errors, server failures, or other exceptional conditions.
 
 ### Performance testing
 1. Concurrency Workloads: Test the performance under concurrent access by simulating multiple clients performing various operations simultaneously (e.g., multiple clients creating tables, querying metadata, committing snapshots, etc.).
 2. Large Schemas and Datasets: Evaluate the performance with tables having a large number of columns (e.g., hundreds or thousands of columns) and large datasets with many partitions or snapshots.
-3. Bulk Operations: Test the performance of bulk operations like importing or exporting table metadata, snapshots, or partitions.
-4. Mixed Workloads: Combine different types of operations in a single workload to simulate a more realistic scenario where various operations are performed concurrently.
+3. Mixed Workloads: Combine different types of operations in a single workload to simulate a more realistic scenario where various operations are performed concurrently.
 
 
 ## Trade-offs and Potential Problems
+- The biggest trade-off being made in the current design is the absence of any optimizations for updates. Updates to any tables will result in the metadata of the tables stored to become stale. Efficiently updating these values is a design challenge. This has not been prioritized based on the assumption that updates in an OLAP system will be infrequent.
 
-Describe any conscious trade-off you made in your implementation that could be problematic in the future or any problems discovered during the design process that remain unaddressed (technical debts).
-The biggest trade-off being made in the current design is the absence of any optimizations for updates. Updates to any tables will result in the metadata of the tables stored to become stale. Efficiently updating these values is a design challenge. This has not been prioritized based on the assumption that updates in an OLAP system will be infrequent.
-Organizing the namespaces and tables as prefixes in the keys for the store may cause problems in terms of maintainability.
-Database
-We chose RocksDB to store metadata, whereas Iceberg Catalog has its own metadata layer that includes metadata files, manifest lists, and manifests. Using RocksDB could be more straightforward to implement compared to building everything from scratch. The components in Iceberg Catalog are likely to be optimized for Iceberg Catalog, and they could outperform RocksDB, which is not dedicated to catalog service.
+- We chose RocksDB to store metadata, whereas Iceberg Catalog has its own metadata layer that includes metadata files, manifest lists, and manifests. Using RocksDB could be more straightforward to implement compared to building everything from scratch. The components in Iceberg Catalog are likely to be optimized for Iceberg Catalog, and they could outperform RocksDB, which is not dedicated to catalog service.
 
 ## Support for Parallelism
 Our catalog service is designed to support parallelism to enhance performance. This is achieved through the following ways:
@@ -135,26 +86,126 @@ Our catalog service is designed to support parallelism to enhance performance. T
 
 2. **Asynchronous API**: The REST API exposed by our Rust application is asynchronous, meaning it can handle multiple requests at the same time without blocking. This is particularly useful for operations that are I/O-bound, such as reading from or writing to the database.
 
-3. **Thread Pool**: We plan to use a thread pool for handling requests. This allows us to limit the number of threads used by our application, preventing thread thrashing and improving performance.
 
 ## Performance Tuning Plan
 Performance tuning is crucial for the efficiency and speed of our catalog service. Here's our plan:
 
-1. **RocksDB Tuning**: We will tune RocksDB configurations based on our workload. For example, we can adjust the block cache size, write buffer size, and compaction style to optimize for read-heavy or write-heavy workloads. More details can be found in the [RocksDB Tuning Guide](https://github.com/facebook/rocksdb/wiki/RocksDB-Tuning-Guide).
+1. **API Optimization**: We will monitor the performance of our API endpoints and optimize the slow ones. This will involve optimizing the database access methods and refactoring the code.
 
-2. **API Optimization**: We will monitor the performance of our API endpoints and optimize the slow ones. This will involve optimizing the database access methods and refactoring the code.
-
-3. **Load Testing**: We will conduct load testing to understand how our service performs under heavy load. This will help us identify bottlenecks and areas for improvement.
-
-4. **Monitoring and Metrics**: We will add monitoring and metrics to our service to track performance over time. This will help us identify performance regressions and understand the impact of our tuning efforts.
+1. **Load Testing**: We will conduct load testing to understand how our service performs under heavy load. This will help us identify bottlenecks and areas for improvement.
 
 ## Milestones
 
-- 75%: Basic API support
-- 100%: Support for parallelism and performance tuning
-- 125%: Performance testing against Iceberg Catalog
+:white_check_mark: 75%: Basic API support
+:white_check_mark: 100%: Support for parallelism and performance tuning
+:white_check_mark: 125%: Performance testing ~~against Iceberg Catalog~~
 
+## Performance Testing Results
 
+**Command to run benchmark script**
+```sh
+python3 benchmarking/bench.py -b catalog1 -d ../rocksdb -u http://localhost:3000 -n 100 -t 1000 -r 1000 -p
+```
+
+### Windows 
+#### Host Specifications
+```
+OS: Windows 11 Home x86_64
+Host: HP OMEN Laptop 15-en0xxx
+Kernel: 10.0.22631
+CPU: AMD Ryzen 7 4800H with Radeon Graphics (16) @ 2.900GHz
+GPU: Caption
+GPU: AMD Radeon(TM) Graphics
+GPU: NVIDIA GeForce GTX 1660 Ti
+Memory: 13769MiB / 15731MiB
+```
+#### Get Namespace API
+```
+Requests      [total, rate, throughput]  9991, 999.20, 999.20
+Duration      [total, attack, wait]      9.9989534s, 9.9989534s, 0s
+Latencies     [mean, 50, 95, 99, max]    860.52µs, 972.607µs, 1.452413ms, 2.987446ms, 37.2744ms
+```
+![](./test_results/windows/get_namespace.png)
+
+#### Get Table API
+```
+Requests      [total, rate, throughput]  10000, 999.55, 999.55
+Duration      [total, attack, wait]      10.004488s, 10.004488s, 0s
+Latencies     [mean, 50, 95, 99, max]    865.783µs, 972.728µs, 1.418071ms, 3.01372ms, 37.3176ms
+```
+![](./test_results/windows/get_table.png)
+
+#### List Namespace API
+```
+Requests      [total, rate, throughput]  10000, 1001.10, 1001.05
+Duration      [total, attack, wait]      9.9895398s, 9.9890283s, 511.5µs
+Latencies     [mean, 50, 95, 99, max]    1.883553ms, 1.191091ms, 5.006752ms, 8.196381ms, 43.6933ms
+```
+![](./test_results/windows/list_namespace.png)
+#### List Tables API
+```
+Requests      [total, rate, throughput]  9992, 999.50, 999.50
+Duration      [total, attack, wait]      9.9970348s, 9.9970348s, 0s
+Latencies     [mean, 50, 95, 99, max]    971.232µs, 973.659µs, 1.978657ms, 3.292131ms, 45.7625ms
+```
+![](./test_results/windows/list_table.png)
+#### Random Testing
+```
+Requests      [total, rate, throughput]  59995, 1000.02, 1000.02
+Duration      [total, attack, wait]      59.9940374s, 59.9940374s, 0s
+Latencies     [mean, 50, 95, 99, max]    526.566µs, 522.409µs, 1.027574ms, 2.010563ms, 23.165ms
+```
+![](./test_results/windows/random.png)
+### MacBook Air M1 
+#### Host Specifications
+```
+OS: macOS 14.4.1 23E224 arm64 
+Host: MacBookAir10,1 
+Kernel: 23.4.0 
+WM: Quartz Compositor 
+WM Theme: Blue (Dark) 
+Terminal: vscode 
+CPU: Apple M1 
+GPU: Apple M1 
+Memory: 1514MiB / 8192MiB 
+```
+
+#### Get Namespace API
+```
+Requests      [total, rate, throughput]         10000, 1000.10, 1000.08
+Duration      [total, attack, wait]             9.999s, 9.999s, 213µs
+Latencies     [min, mean, 50, 90, 95, 99, max]  65.833µs, 191.877µs, 196.477µs, 243.657µs, 256.028µs, 305.26µs, 1.578ms
+
+```
+![](./test_results/mac/get_namespcae.png)
+#### Get Table API
+```
+Requests      [total, rate, throughput]         10000, 1000.10, 999.27
+Duration      [total, attack, wait]             9.999s, 9.999s, 268.708µs
+Latencies     [min, mean, 50, 90, 95, 99, max]  70.166µs, 221.648µs, 223.806µs, 262.714µs, 279.431µs, 394.982µs, 6.708ms
+```
+![](./test_results/mac/get_table.png)
+#### List Namespace API
+```
+Requests      [total, rate, throughput]         10000, 1000.11, 999.16
+Duration      [total, attack, wait]             9.999s, 9.999s, 498.75µs
+Latencies     [min, mean, 50, 90, 95, 99, max]  272.708µs, 478.628µs, 452.66µs, 580.816µs, 605.989µs, 726.08µs, 18.557ms
+```
+![](./test_results/mac/list_namespace.png)
+#### List Tables API
+```
+Requests      [total, rate, throughput]         10000, 1000.10, 999.97
+Duration      [total, attack, wait]             9.999s, 9.999s, 254.458µs
+Latencies     [min, mean, 50, 90, 95, 99, max]  73.625µs, 235.993µs, 249.85µs, 283.297µs, 296.26µs, 365.961µs, 1.97ms
+```
+![](./test_results/mac/list_tables.png)
+#### Random Testing
+```
+Requests      [total, rate, throughput]         60000, 1000.02, 999.93
+Duration      [total, attack, wait]             59.999s, 59.999s, 86.666µs
+Latencies     [min, mean, 50, 90, 95, 99, max]  54.708µs, 186.655µs, 171.961µs, 252.694µs, 278.067µs, 429.093µs, 14.688ms
+```
+![](./test_results/mac/random.png)
 ### References
 
 [1] https://www.snowflake.com/blog/how-foundationdb-powers-snowflake-metadata-forward/
