@@ -1,11 +1,12 @@
+use crate::dto::namespace_data::NamespaceIdent;
 use crate::dto::rename_request::TableRenameRequest;
-use crate::dto::table_data::{TableIdent, TableCreation, Table};
+use crate::dto::table_data::{Table, TableCreation, TableIdent};
 use crate::repository::table::TableRepository;
-use crate::dto::namespace_data::{NamespaceIdent};
 use axum::{
     extract::{Json, Path, State},
     http::StatusCode,
 };
+use std::io::ErrorKind;
 use std::sync::Arc;
 
 pub async fn list_tables(
@@ -18,9 +19,13 @@ pub async fn list_tables(
             .map(|part| part.to_string())
             .collect(),
     );
-    repo.list_all_tables(&id)
-        .map(|tables| Json(tables.unwrap_or_default()))
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+    match repo.list_all_tables(&id) {
+        Ok(tables) => Ok(Json(tables.unwrap_or_default())),
+        Err(e) => match e.kind() {
+            ErrorKind::NotFound => Err((StatusCode::NOT_FOUND, format!("Error: {}", e))),
+            _ => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
+        },
+    }
 }
 
 pub async fn create_table(
@@ -34,9 +39,14 @@ pub async fn create_table(
             .map(|part| part.to_string())
             .collect(),
     );
-    repo.create_table(&id, &table)
-        .map(|_| StatusCode::CREATED)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+    match repo.create_table(&id, &table) {
+        Ok(_) => Ok(StatusCode::CREATED),
+        Err(e) => match e.kind() {
+            ErrorKind::NotFound => Err((StatusCode::NOT_FOUND, format!("Error: {}", e))),
+            ErrorKind::AlreadyExists => Err((StatusCode::CONFLICT, format!("Error: {}", e))),
+            _ => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
+        },
+    }
 }
 
 pub async fn load_table(
@@ -52,7 +62,10 @@ pub async fn load_table(
 
     match repo.load_table(&id, table.clone()) {
         Ok(Some(table_data)) => Ok(Json(table_data)),
-        Ok(None) => Err((StatusCode::NOT_FOUND, format!("Table {} not found", table.clone()))),
+        Ok(None) => Err((
+            StatusCode::NOT_FOUND,
+            format!("Table {} not found", table.clone()),
+        )),
         Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
     }
 }
@@ -67,9 +80,13 @@ pub async fn delete_table(
             .map(|part| part.to_string())
             .collect(),
     );
-    repo.drop_table(&id, table)
-        .map(|_| StatusCode::NO_CONTENT)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+    match repo.drop_table(&id, table) {
+        Ok(_) => Ok(StatusCode::NO_CONTENT),
+        Err(e) => match e.kind() {
+            ErrorKind::NotFound => Err((StatusCode::NOT_FOUND, format!("Error: {}", e))),
+            _ => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
+        },
+    }
 }
 
 pub async fn table_exists(
@@ -83,7 +100,8 @@ pub async fn table_exists(
             .collect(),
     );
     match repo.table_exists(&id, table) {
-        Ok(true) => Ok(StatusCode::FOUND),
+        // Ideally this should be FOUND but Iceberg spec says 204
+        Ok(true) => Ok(StatusCode::NO_CONTENT),
         Ok(false) => Ok(StatusCode::NOT_FOUND),
         Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
     }
@@ -93,8 +111,12 @@ pub async fn rename_table(
     State(repo): State<Arc<TableRepository>>,
     request: Json<TableRenameRequest>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    repo.rename_table(&request)
-        .map(|_| StatusCode::OK)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+    match repo.rename_table(&request) {
+        Ok(_) => Ok(StatusCode::NO_CONTENT),
+        Err(e) => match e.kind() {
+            ErrorKind::NotFound => Err((StatusCode::NOT_FOUND, format!("Error: {}", e))),
+            ErrorKind::AlreadyExists => Err((StatusCode::CONFLICT, format!("Error: {}", e))),
+            _ => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
+        },
+    }
 }
-

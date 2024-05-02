@@ -30,3 +30,69 @@ impl NamespaceIdent {
         NamespaceIdent(id)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_namespace_ident() {
+        let id = vec!["test".to_string()];
+        let namespace_ident = NamespaceIdent::new(id.clone());
+
+        assert_eq!(namespace_ident.0, id);
+    }
+
+    #[test]
+    fn test_namespace_data() {
+        let id = vec!["test".to_string()];
+        let namespace_ident = NamespaceIdent::new(id.clone());
+        let properties = serde_json::json!({"key": "value"});
+
+        let namespace_data = NamespaceData {
+            name: namespace_ident.clone(),
+            properties: properties.clone(),
+        };
+
+        assert_eq!(*namespace_data.get_name(), namespace_ident);
+        assert_eq!(*namespace_data.get_properties(), properties);
+    }
+
+    #[test]
+    fn test_namespace_ident_serde() {
+        let id = vec!["test".to_string()];
+        let namespace_ident = NamespaceIdent::new(id.clone());
+
+        // Serialize
+        let serialized = serde_json::to_string(&namespace_ident).unwrap();
+        assert_eq!(serialized, r#"["test"]"#);
+
+        // Deserialize
+        let deserialized: NamespaceIdent = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized, namespace_ident);
+    }
+
+    #[test]
+    fn test_namespace_data_serde() {
+        let id = vec!["test".to_string()];
+        let namespace_ident = NamespaceIdent::new(id.clone());
+        let properties = json!({"key": "value"});
+
+        let namespace_data = NamespaceData {
+            name: namespace_ident.clone(),
+            properties: properties.clone(),
+        };
+
+        // Serialize
+        let serialized = serde_json::to_string(&namespace_data).unwrap();
+        assert_eq!(
+            serialized,
+            r#"{"name":["test"],"properties":{"key":"value"}}"#
+        );
+
+        // Deserialize
+        let deserialized: NamespaceData = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized, namespace_data);
+    }
+}

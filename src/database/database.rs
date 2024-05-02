@@ -15,11 +15,10 @@ impl Database {
 
         let namespace_cf = ColumnFamilyDescriptor::new("NamespaceData", Options::default());
         let table_cf = ColumnFamilyDescriptor::new("TableData", Options::default());
-        let operator_cf = ColumnFamilyDescriptor::new("OperatorStatistics", Options::default());
         let table_namespace_cf =
             ColumnFamilyDescriptor::new("TableNamespaceMap", Options::default());
 
-        let cfs_vec = vec![namespace_cf, table_cf, operator_cf, table_namespace_cf];
+        let cfs_vec = vec![namespace_cf, table_cf, table_namespace_cf];
 
         let db = DB::open_cf_descriptors(&opts, path, cfs_vec)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
@@ -138,140 +137,76 @@ impl Database {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use tempfile::tempdir;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
 
-//     #[test]
-//     fn test_open() {
-//         let dir = tempdir().unwrap();
-//         let db = Database::open(dir.path());
-//         assert!(db.is_ok());
-//     }
+    #[test]
+    fn test_database_operations() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path();
 
-//     #[test]
-//     fn test_insert_and_get() {
-//         let dir = tempdir().unwrap();
-//         let db = Database::open(dir.path()).unwrap();
-//         let key = "test_key";
-//         let value = "test_value";
+        // Test open
+        let db = Database::open(db_path).unwrap();
 
-//         // Test insert
-//         let insert_result = db.insert("NamespaceData", &key, &value);
-//         assert!(insert_result.is_ok());
+        // Test insert
+        let key: String = "key1".to_string();
+        let value = "value1";
+        db.insert("NamespaceData", &key, &value).unwrap();
 
-//         // Test get
-//         let get_result: Result<Option<String>, _> = db.get("NamespaceData", &key);
-//         assert!(get_result.is_ok());
-//         assert_eq!(get_result.unwrap().unwrap(), value);
-//     }
+        // Test get
+        let retrieved_value: Option<String> = db.get("NamespaceData", &key).unwrap();
+        assert_eq!(retrieved_value, Some(value.to_string()));
 
-//     #[test]
-//     fn test_delete() {
-//         let dir = tempdir().unwrap();
-//         let db = Database::open(dir.path()).unwrap();
-//         let key = "test_key";
-//         let value = "test_value";
+        // Test update
+        let updated_value = "updated_value1";
+        db.update("NamespaceData", &key, &updated_value).unwrap();
+        let retrieved_value: Option<String> = db.get("NamespaceData", &key).unwrap();
+        assert_eq!(retrieved_value, Some(updated_value.to_string()));
 
-//         // Insert a key-value pair
-//         db.insert("NamespaceData", &key, &value).unwrap();
+        // Test delete
+        db.delete("NamespaceData", &key).unwrap();
+        let retrieved_value: Option<String> = db.get("NamespaceData", &key).unwrap();
+        assert_eq!(retrieved_value, None);
+    }
 
-//         // Delete the key
-//         let delete_result = db.delete("NamespaceData", &key);
-//         assert!(delete_result.is_ok());
+    #[test]
+    fn test_database_operations_negative_paths() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path();
 
-//         // Try to get the deleted key
-//         let get_result: Result<Option<String>, _> = db.get("NamespaceData", &key);
-//         assert!(get_result.is_ok());
-//         assert!(get_result.unwrap().is_none());
-//     }
+        // Test open
+        let db = Database::open(db_path).unwrap();
 
-//     #[test]
-//     fn test_insert_and_get_nonexistent_cf() {
-//         let dir = tempdir().unwrap();
-//         let db = Database::open(dir.path()).unwrap();
-//         let key = "test_key";
-//         let value = "test_value";
+        // Test get with non-existing key
+        let non_existing_key = "non_existing_key".to_string();
+        let retrieved_value: Option<String> = db.get("NamespaceData", &non_existing_key).unwrap();
+        assert_eq!(retrieved_value, None);
 
-//         // Test insert with nonexistent column family
-//         let insert_result = db.insert("NonexistentCF", &key, &value);
-//         assert!(insert_result.is_err());
+        // Test update with non-existing key
+        let updated_value = "updated_value1";
+        db.update("NamespaceData", &non_existing_key, &updated_value)
+            .unwrap();
+        let retrieved_value: Option<String> = db.get("NamespaceData", &non_existing_key).unwrap();
+        assert_eq!(retrieved_value, Some(updated_value.to_string()));
 
-//         // Test get with nonexistent column family
-//         let get_result: Result<Option<String>, _> = db.get("NonexistentCF", &key);
-//         assert!(get_result.is_err());
-//     }
+        // Test delete with non-existing key
+        db.delete("NamespaceData", &non_existing_key).unwrap();
+        let retrieved_value: Option<String> = db.get("NamespaceData", &non_existing_key).unwrap();
+        assert_eq!(retrieved_value, None);
 
-//     #[test]
-//     fn test_get_nonexistent_key() {
-//         let dir = tempdir().unwrap();
-//         let db = Database::open(dir.path()).unwrap();
-
-//         // Test get with nonexistent key
-//         let get_result: Result<Option<String>, _> = db.get("NamespaceData", &"nonexistent_key");
-//         assert!(get_result.is_ok());
-//         assert!(get_result.unwrap().is_none());
-//     }
-
-//     #[test]
-//     fn test_delete_nonexistent_key() {
-//         let dir = tempdir().unwrap();
-//         let db = Database::open(dir.path()).unwrap();
-
-//         // Test delete with nonexistent key
-//         let delete_result = db.delete("NamespaceData", &"nonexistent_key");
-//         assert!(delete_result.is_ok());
-//     }
-
-//     #[test]
-//     fn test_insert_and_get_empty_key() {
-//         let dir = tempdir().unwrap();
-//         let db = Database::open(dir.path()).unwrap();
-//         let key = "";
-//         let value = "test_value";
-
-//         // Test insert with empty key
-//         let insert_result = db.insert("NamespaceData", &key, &value);
-//         assert!(insert_result.is_ok());
-
-//         // Test get with empty key
-//         let get_result: Result<Option<String>, _> = db.get("NamespaceData", &key);
-//         assert!(get_result.is_ok());
-//         assert_eq!(get_result.unwrap().unwrap(), value);
-//     }
-
-//     #[test]
-//     fn test_insert_and_get_empty_value() {
-//         let dir = tempdir().unwrap();
-//         let db = Database::open(dir.path()).unwrap();
-//         let key = "test_key";
-//         let value = "";
-
-//         // Test insert with empty value
-//         let insert_result = db.insert("NamespaceData", &key, &value);
-//         assert!(insert_result.is_ok());
-
-//         // Test get with empty value
-//         let get_result: Result<Option<String>, _> = db.get("NamespaceData", &key);
-//         assert!(get_result.is_ok());
-//         assert_eq!(get_result.unwrap().unwrap(), value);
-//     }
-
-//     #[test]
-//     fn test_insert_and_get_large_data() {
-//         let dir = tempdir().unwrap();
-//         let db = Database::open(dir.path()).unwrap();
-//         let key = "test_key";
-//         let value = "a".repeat(1_000_000);
-
-//         // Test insert with large data
-//         let insert_result = db.insert("NamespaceData", &key, &value);
-//         assert!(insert_result.is_ok());
-
-//         // Test get with large data
-//         let get_result: Result<Option<String>, _> = db.get("NamespaceData", &key);
-//         assert!(get_result.is_ok());
-//         assert_eq!(get_result.unwrap().unwrap(), value);
-//     }
-// }
+        // Test operations with non-existing column family
+        let non_existing_cf = "non_existing_cf";
+        let key = "key1".to_string();
+        let value = "value1";
+        let result = db.insert(non_existing_cf, &key, &value);
+        assert!(result.is_err());
+        let result: Result<Option<String>, _> = db.get(non_existing_cf, &key);
+        assert!(result.is_err());
+        let result = db.update(non_existing_cf, &key, &value);
+        assert!(result.is_err());
+        let result = db.delete(non_existing_cf, &key);
+        assert!(result.is_err());
+    }
+}

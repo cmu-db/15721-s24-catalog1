@@ -134,6 +134,33 @@ for name, target in targets.items():
         plot_cmd = f"cat {STATISTIC_FILE} | vegeta plot > {PLOT_FILE}"
         sp.run(plot_cmd, shell=True)
 # ... more?
+# 2. random endpoint stress test
+# Define the file path
+PATH_TARGET_FILE = f"{TEST_ROOT_DIR}/requests_get_table.txt"
+
+# Write the URLs to the file
+with open(PATH_TARGET_FILE, "w") as file:
+    for i in range(len(namespaces)):
+        random_namespace = random.choice(namespaces)
+        random_table = random.choice(random_namespace['tables'])
+
+        # Generate request URL
+        target = f"{args.base_url}/{NAMESPACE_ENDPOINT}/{random_namespace['name']}/{TABLE_ENDPOINT}/{random_table}"
+        request_url = f"GET {target}"
+
+        file.write(request_url + "\n")
+
+print("URLs have been written to", PATH_TARGET_FILE)
+
+
+STATISTIC_FILE = f"{TEST_ROOT_DIR}/results_random.bin"
+attack = f"vegeta attack -targets={PATH_TARGET_FILE} -rate={args.rate} -duration=60s | tee {STATISTIC_FILE} | vegeta report"
+run(attack, note="random endpoints stress test",
+    out=f"{TEST_ROOT_DIR}/vegeta_random.log")
+if args.plot:
+    PLOT_FILE = f"{TEST_ROOT_DIR}/plot_random.html"
+    run(f"cat {STATISTIC_FILE} | vegeta plot > {PLOT_FILE}",
+        note="generating plot")
 
 # clean up
 catalog_server.send_signal(signal.SIGINT)
