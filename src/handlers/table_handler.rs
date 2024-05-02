@@ -1,5 +1,5 @@
 use crate::dto::rename_request::TableRenameRequest;
-use crate::dto::table_data::{TableIdent, TableCreation, TableMetadata, Table};
+use crate::dto::table_data::{TableIdent, TableCreation, Table};
 use crate::repository::table::TableRepository;
 use crate::dto::namespace_data::{NamespaceIdent};
 use axum::{
@@ -49,7 +49,7 @@ pub async fn load_table(
             .map(|part| part.to_string())
             .collect(),
     );
-    
+
     match repo.load_table(&id, table.clone()) {
         Ok(Some(table_data)) => Ok(Json(table_data)),
         Ok(None) => Err((StatusCode::NOT_FOUND, format!("Table {} not found", table.clone()))),
@@ -57,41 +57,44 @@ pub async fn load_table(
     }
 }
 
-// pub async fn delete_table(
-//     State(repo): State<Arc<TableRepository>>,
-//     Path((namespace, table)): Path<(String, String)>,
-// ) -> Result<StatusCode, (StatusCode, String)> {
-//     repo.drop_table(&namespace, &table)
-//         .map(|_| StatusCode::NO_CONTENT)
-//         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
-// }
+pub async fn delete_table(
+    State(repo): State<Arc<TableRepository>>,
+    Path((namespace, table)): Path<(String, String)>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    let id = NamespaceIdent::new(
+        namespace
+            .split('\u{1F}')
+            .map(|part| part.to_string())
+            .collect(),
+    );
+    repo.drop_table(&id, table)
+        .map(|_| StatusCode::NO_CONTENT)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+}
 
-// pub async fn table_exists(
-//     State(repo): State<Arc<TableRepository>>,
-//     Path((namespace, table)): Path<(String, String)>,
-// ) -> Result<StatusCode, (StatusCode, String)> {
-//     match repo.table_exists(&namespace, &table) {
-//         Ok(true) => Ok(StatusCode::FOUND),
-//         Ok(false) => Ok(StatusCode::NOT_FOUND),
-//         Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
-//     }
-// }
+pub async fn table_exists(
+    State(repo): State<Arc<TableRepository>>,
+    Path((namespace, table)): Path<(String, String)>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    let id = NamespaceIdent::new(
+        namespace
+            .split('\u{1F}')
+            .map(|part| part.to_string())
+            .collect(),
+    );
+    match repo.table_exists(&id, table) {
+        Ok(true) => Ok(StatusCode::FOUND),
+        Ok(false) => Ok(StatusCode::NOT_FOUND),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e))),
+    }
+}
 
-// pub async fn rename_table(
-//     State(repo): State<Arc<TableRepository>>,
-//     request: Json<TableRenameRequest>,
-// ) -> Result<StatusCode, (StatusCode, String)> {
-//     repo.rename_table(&request)
-//         .map(|_| StatusCode::OK)
-//         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
-// }
+pub async fn rename_table(
+    State(repo): State<Arc<TableRepository>>,
+    request: Json<TableRenameRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    repo.rename_table(&request)
+        .map(|_| StatusCode::OK)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e)))
+}
 
-// #[derive(Debug, serde::Serialize, serde::Deserialize)]
-// pub struct MetricsReport {}
-
-// pub async fn report_metrics(
-//     Path((namespace, table)): Path<(String, String)>,
-// ) -> Result<Json<String>, (StatusCode, String)> {
-//     // Logic to process metrics report
-//     Ok(Json(table))
-// }

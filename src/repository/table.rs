@@ -1,6 +1,5 @@
 use crate::database::database::Database;
 use crate::dto::rename_request::TableRenameRequest;
-use crate::dto::column_data::ColumnData;
 use crate::dto::table_data::{TableIdent, TableCreation, Table, TableMetadata};
 use crate::dto::namespace_data::{NamespaceIdent, NamespaceData};
 use std::io::{Error, ErrorKind};
@@ -23,7 +22,7 @@ impl TableRepository {
 
     pub fn create_table(&self, namespace: &NamespaceIdent, table_creation: &TableCreation) -> Result<(), Error> {
         let db = self.database.lock().unwrap();
-        let namespace_data : NamespaceData = match db.get("NamespaceData", namespace)? {
+        let _ : NamespaceData = match db.get("NamespaceData", namespace)? {
             Some(data) => data,
             None => {
                 return Err(std::io::Error::new(
@@ -64,40 +63,42 @@ impl TableRepository {
         namespace: &NamespaceIdent,
         table_name: String,
     ) -> Result<Option<Table>, Error> {
-        // Check if the table is in the given namespace
         let table_id = TableIdent::new(namespace.clone(), table_name.clone());
         let db = self.database.lock().unwrap();
         // If the table is in the namespace, get the table data
         db.get::<TableIdent, Table>("TableData", &table_id)
     }
 
-    // pub fn drop_table(&self, namespace: &str, table_name: &str) -> Result<(), Error> {
-    //     let db = self.database.lock().unwrap();
-    //     db.delete("TableData", table_name)?;
-    //     let mut tables = db
-    //         .get::<Vec<String>>("TableNamespaceMap", namespace)
-    //         .unwrap()
-    //         .unwrap();
-    //     tables.retain(|name| name != table_name);
-    //     db.insert("TableNamespaceMap", namespace, &tables)
-    // }
+    pub fn drop_table(&self, namespace: &NamespaceIdent, table_name: String) -> Result<(), Error> {
+        let db = self.database.lock().unwrap();
+        let table_id = TableIdent::new(namespace.clone(), table_name.clone());
+        db.delete("TableData", &table_id)?;
+        let mut tables = db
+            .get::<NamespaceIdent, Vec<TableIdent>>("TableNamespaceMap", namespace)
+            .unwrap()
+            .unwrap();
+        tables.retain(|id| id.name != table_name);
+        db.insert("TableNamespaceMap", namespace, &tables)
+    }
 
-    // pub fn table_exists(&self, namespace: &str, table_name: &str) -> Result<bool, Error> {
-    //     let table = self.load_table(namespace, table_name)?;
-    //     Ok(table.is_some())
-    // }
+    pub fn table_exists(&self, namespace: &NamespaceIdent, table_name: String) -> Result<bool, Error> {
+        let table = self.load_table(namespace, table_name)?;
+        Ok(table.is_some())
+    }
 
-    // pub fn rename_table(&self, rename_request: &TableRenameRequest) -> Result<(), Error> {
-    //     let namespace = &rename_request.namespace;
-    //     let old_name = &rename_request.old_name;
-    //     let new_name = &rename_request.new_name;
-    //     let table = self
-    //         .load_table(namespace, old_name)?
-    //         .ok_or_else(|| Error::new(ErrorKind::NotFound, "Table not found"))?;
-    //     let mut new_table = table.clone();
-    //     new_table.name = new_name.clone();
-    //     self.drop_table(namespace, old_name)?;
-    //     self.create_table(namespace, &new_table)
-    // }
+    pub fn rename_table(&self, rename_request: &TableRenameRequest) -> Result<(), Error> {
+        let source = rename_request.source.clone();
+        let destination = rename_request.destination.clone();
+        let namespace = source.namespace.clone();
+        let table = self
+            .load_table(&namespace, source.name.clone())?
+            .ok_or_else(|| Error::new(ErrorKind::NotFound, "Table not found"))?;
+        
+        let mut new_table = table.clone();
+        new_table.id = destination.clone();
+
+        self.drop_table(&namespace, source.name.clone())?;
+        self.create_table(&destination.namespace.clone(), &TableCreation{name: destination.name.clone()})
+    }
 }
 
