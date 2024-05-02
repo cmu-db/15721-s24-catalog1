@@ -32,7 +32,6 @@ We choose RocksDB as the database in the catalog to store metadata. It is a fast
 
 ## Design Rationale
 
-An explanation of why you chose the given design. Your justification should discuss issues related to (1) correctness, (2) performance, (3) engineering complexity/maintainability, and (4) testing. It should also include a brief discussion of the other implementations that you considered and why they were deemed inferior.
 Most design decisions were made with the assumption that we do not have any schema updates and writes are infrequent with bulk data
 
 #### Database
@@ -42,7 +41,6 @@ We contemplated two embedded database candidates for catalog service: SQLite and
 1. Better concurrency control: SQLite locks the entire database when dealing with concurrency writing, whereas RocksDB supports snapshots.
 2. Flexibility: RocksDB provides more configuration options.
 3. Scalability: RocksDB stores data in different partitions, whereas SQLite stores data in one single file, which isn’t ideal for scalability.
-4. Storage: RocksDB uses key-value storage, which is good for intensive write operations. In short, RocksDB would provide better performance and concurrency control when we deal with write-intensive workloads.
 
 #### Why a key-value store?
 
@@ -142,6 +140,7 @@ Duration      [total, attack, wait]      9.9895398s, 9.9890283s, 511.5µs
 Latencies     [mean, 50, 95, 99, max]    1.883553ms, 1.191091ms, 5.006752ms, 8.196381ms, 43.6933ms
 ```
 ![](./test_results/windows/list_namespace.png)
+
 #### List Tables API
 ```
 Requests      [total, rate, throughput]  9992, 999.50, 999.50
@@ -149,6 +148,7 @@ Duration      [total, attack, wait]      9.9970348s, 9.9970348s, 0s
 Latencies     [mean, 50, 95, 99, max]    971.232µs, 973.659µs, 1.978657ms, 3.292131ms, 45.7625ms
 ```
 ![](./test_results/windows/list_table.png)
+
 #### Random Testing
 ```
 Requests      [total, rate, throughput]  59995, 1000.02, 1000.02
