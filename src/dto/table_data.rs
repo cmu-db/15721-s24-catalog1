@@ -26,7 +26,7 @@ impl TableIdent {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, TypedBuilder)]
+#[derive(Serialize, Deserialize, Debug, TypedBuilder, Clone, PartialEq, Eq, Hash)]
 pub struct TableCreation {
     /// The name of the table.
     pub name: String,

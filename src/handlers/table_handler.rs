@@ -120,3 +120,114 @@ pub async fn rename_table(
         },
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::database::database::Database;
+    use crate::dto::table_data::TableCreation;
+    use crate::repository::namespace::NamespaceRepository;
+    use axum::http::StatusCode;
+    use std::sync::{Arc, Mutex};
+    use tempfile::tempdir;
+
+    #[tokio::test]
+    async fn test_table_endpoints() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+        let db = Arc::new(Mutex::new(db));
+        let repo = Arc::new(TableRepository::new(db.clone()));
+
+        // Create a namespace for testing
+        let namespace_ident = NamespaceIdent(vec!["test".to_string()]);
+        let namespace_repo = NamespaceRepository::new(db.clone());
+        namespace_repo
+            .create_namespace(namespace_ident.clone(), None)
+            .unwrap();
+
+        // Test create_table
+        let table_creation = Json(TableCreation {
+            name: "table1".to_string(),
+        });
+        assert_eq!(
+            create_table(
+                State(repo.clone()),
+                Path("test".to_string()),
+                table_creation.clone()
+            )
+            .await
+            .unwrap(),
+            StatusCode::CREATED
+        );
+
+        // Test table_exists
+        assert_eq!(
+            table_exists(
+                State(repo.clone()),
+                Path(("test".to_string(), "table1".to_string()))
+            )
+            .await
+            .unwrap(),
+            StatusCode::NO_CONTENT
+        );
+
+        // Test load_table
+        let table = load_table(
+            State(repo.clone()),
+            Path(("test".to_string(), "table1".to_string())),
+        )
+        .await
+        .unwrap();
+        assert_eq!(table.id.name, "table1");
+
+        // Test rename_table
+        let rename_request = Json(TableRenameRequest {
+            source: TableIdent::new(namespace_ident.clone(), "table1".to_string()),
+            destination: TableIdent::new(namespace_ident.clone(), "table2".to_string()),
+        });
+        assert_eq!(
+            rename_table(State(repo.clone()), rename_request.clone())
+                .await
+                .unwrap(),
+            StatusCode::NO_CONTENT
+        );
+        assert_eq!(
+            table_exists(
+                State(repo.clone()),
+                Path(("test".to_string(), "table1".to_string()))
+            )
+            .await
+            .unwrap(),
+            StatusCode::NOT_FOUND
+        );
+        assert_eq!(
+            table_exists(
+                State(repo.clone()),
+                Path(("test".to_string(), "table2".to_string()))
+            )
+            .await
+            .unwrap(),
+            StatusCode::NO_CONTENT
+        );
+
+        // Test delete_table
+        assert_eq!(
+            delete_table(
+                State(repo.clone()),
+                Path(("test".to_string(), "table2".to_string()))
+            )
+            .await
+            .unwrap(),
+            StatusCode::NO_CONTENT
+        );
+        assert_eq!(
+            table_exists(
+                State(repo.clone()),
+                Path(("test".to_string(), "table2".to_string()))
+            )
+            .await
+            .unwrap(),
+            StatusCode::NOT_FOUND
+        );
+    }
+}

@@ -153,3 +153,112 @@ impl TableRepository {
         self.drop_table(&namespace, source.name.clone())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::dto::table_data::TableCreation;
+    use crate::repository::namespace::NamespaceRepository;
+    use std::sync::{Arc, Mutex};
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_table_repository() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+        let db = Arc::new(Mutex::new(db));
+        let repo = TableRepository::new(db.clone());
+
+        // Create a namespace for testing
+        let namespace_ident = NamespaceIdent(vec!["test".to_string()]);
+        let namespace_repo = NamespaceRepository::new(db.clone());
+        namespace_repo
+            .create_namespace(namespace_ident.clone(), None)
+            .unwrap();
+
+        // Test create_table
+        let table_creation = TableCreation {
+            name: "table1".to_string(),
+        };
+        repo.create_table(&namespace_ident, &table_creation)
+            .unwrap();
+
+        // Test table_exists
+        assert!(repo
+            .table_exists(&namespace_ident, "table1".to_string())
+            .unwrap());
+
+        // Test load_table
+        let table = repo
+            .load_table(&namespace_ident, "table1".to_string())
+            .unwrap()
+            .unwrap();
+        assert_eq!(table.id.name, "table1");
+
+        // Test rename_table
+        let rename_request = TableRenameRequest {
+            source: TableIdent::new(namespace_ident.clone(), "table1".to_string()),
+            destination: TableIdent::new(namespace_ident.clone(), "table2".to_string()),
+        };
+        repo.rename_table(&rename_request).unwrap();
+        assert!(!repo
+            .table_exists(&namespace_ident, "table1".to_string())
+            .unwrap());
+        assert!(repo
+            .table_exists(&namespace_ident, "table2".to_string())
+            .unwrap());
+
+        // Test drop_table
+        repo.drop_table(&namespace_ident, "table2".to_string())
+            .unwrap();
+        assert!(!repo
+            .table_exists(&namespace_ident, "table2".to_string())
+            .unwrap());
+    }
+
+    #[test]
+    fn test_table_repository_negative() {
+        let dir = tempdir().unwrap();
+        let db = Database::open(dir.path()).unwrap();
+        let db = Arc::new(Mutex::new(db));
+        let repo = TableRepository::new(db.clone());
+
+        // Test with non-existent namespace
+        let non_existent_namespace = NamespaceIdent(vec!["non_existent".to_string()]);
+        let table_creation = TableCreation {
+            name: "table1".to_string(),
+        };
+        assert!(repo
+            .create_table(&non_existent_namespace, &table_creation)
+            .is_err());
+        assert!(repo
+            .drop_table(&non_existent_namespace, "table1".to_string())
+            .is_err());
+
+        // Test with existing table
+        let namespace_ident = NamespaceIdent(vec!["test".to_string()]);
+        let namespace_repo = NamespaceRepository::new(db.clone());
+        namespace_repo
+            .create_namespace(namespace_ident.clone(), None)
+            .unwrap();
+        repo.create_table(&namespace_ident, &table_creation)
+            .unwrap();
+        assert!(repo
+            .create_table(&namespace_ident, &table_creation)
+            .is_err());
+
+        // Test rename_table with non-existent source table
+        let rename_request = TableRenameRequest {
+            source: TableIdent::new(namespace_ident.clone(), "non_existent".to_string()),
+            destination: TableIdent::new(namespace_ident.clone(), "table2".to_string()),
+        };
+        assert!(repo.rename_table(&rename_request).is_err());
+
+        // Test rename_table with existing destination table
+        let rename_request = TableRenameRequest {
+            source: TableIdent::new(namespace_ident.clone(), "table1".to_string()),
+            destination: TableIdent::new(namespace_ident.clone(), "table1".to_string()),
+        };
+        assert!(repo.rename_table(&rename_request).is_err());
+    }
+}
